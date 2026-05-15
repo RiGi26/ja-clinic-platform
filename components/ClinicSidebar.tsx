@@ -87,8 +87,8 @@ export default function ClinicSidebar({ role, userName, userSub }: Props) {
             <p className="text-white font-black text-base leading-tight tracking-tight">
               Clinic Platform
             </p>
-            <p className="text-cyan-400 text-[11px] font-bold uppercase tracking-widest mt-0.5">
-              {ROLE_LABEL[role]}
+            <p className="text-white/40 text-[11px] font-medium mt-0.5">
+              by Japan Arena Corp
             </p>
           </div>
         )}
