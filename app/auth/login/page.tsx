@@ -6,13 +6,24 @@ import { Eye, EyeOff, AlertCircle, Loader2, FlaskConical } from 'lucide-react'
 
 function DemoButton() {
   const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
 
   async function handleDemo() {
     setLoading(true)
-    const res  = await fetch('/api/demo-clinic-login', { method: 'POST' })
-    const data = await res.json()
-    if (data.success) window.location.href = data.redirectTo ?? '/admin'
-    else setLoading(false)
+    setError('')
+    try {
+      const res  = await fetch('/api/demo-clinic-login', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        window.location.href = data.redirectTo ?? '/admin'
+      } else {
+        setError(data.error ?? 'Demo gagal. Coba lagi.')
+        setLoading(false)
+      }
+    } catch {
+      setError('Koneksi gagal. Coba lagi.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -24,6 +35,7 @@ function DemoButton() {
       {loading ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
       {loading ? 'Menyiapkan demo...' : 'Coba Demo Admin Klinik'}
     </button>
+    {error && <p className="text-xs text-red-500 mt-2 font-medium">{error}</p>}
   )
 }
 
