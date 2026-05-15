@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
@@ -80,22 +81,32 @@ export default function ClinicSidebar({ role, userName, userSub }: Props) {
     >
       {/* Logo / Brand */}
       <div className={`border-b border-white/10 flex items-center h-[72px] ${
-        collapsed ? 'justify-center px-2' : 'justify-between px-5'
+        collapsed ? 'justify-center px-2' : 'px-5'
       }`}>
-        {!collapsed && (
-          <div>
-            <p className="text-white font-black text-base leading-tight tracking-tight">
-              Clinic Platform
-            </p>
-            <p className="text-white/40 text-[11px] font-medium mt-0.5">
-              by Japan Arena Corp
-            </p>
-          </div>
-        )}
+        <Link
+          href={`/${role === 'patient' ? 'patient' : role === 'doctor' ? 'doctor' : 'admin'}`}
+          className="flex items-center gap-3"
+        >
+          <Image
+            src="/images/Icon.png"
+            alt="Japan Arena Corp"
+            width={36} height={36}
+            className="w-9 h-9 object-contain flex-shrink-0"
+            priority
+          />
+          {!collapsed && (
+            <div>
+              <p className="text-white font-black text-sm leading-tight tracking-tight">
+                Clinic Platform
+              </p>
+              <p className="text-white/40 text-[11px] font-medium mt-0.5">
+                by Japan Arena Corp
+              </p>
+            </div>
+          )}
+        </Link>
         {collapsed && (
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-            <Activity size={18} className="text-cyan-400" />
-          </div>
+          <div className="hidden">{/* spacer */}</div>
         )}
       </div>
 

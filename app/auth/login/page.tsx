@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Eye, EyeOff, AlertCircle, Loader2, Activity } from 'lucide-react'
+import Image from 'next/image'
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [email,        setEmail]        = useState('')
@@ -47,13 +48,13 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10 px-10 pt-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center">
-              <Activity size={20} className="text-cyan-400" />
-            </div>
-            <div>
-              <p className="text-white font-black text-base leading-tight tracking-tight">Clinic Platform</p>
-              <p className="text-cyan-400/70 text-[11px] font-bold uppercase tracking-widest">by Japan Arena Corp</p>
-            </div>
+            <Image
+              src="/images/logo-dark.png"
+              alt="Japan Arena Corp"
+              width={200} height={60}
+              className="h-12 w-auto object-contain"
+              priority
+            />
           </div>
         </div>
 
@@ -96,9 +97,12 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-[#0891B2] flex items-center justify-center">
-              <Activity size={18} className="text-white" />
-            </div>
+            <Image
+              src="/images/Icon.png"
+              alt="Japan Arena Corp"
+              width={36} height={36}
+              className="w-9 h-9 object-contain"
+            />
             <p className="font-black text-[#0C2340] text-lg tracking-tight">Clinic Platform</p>
           </div>
 
