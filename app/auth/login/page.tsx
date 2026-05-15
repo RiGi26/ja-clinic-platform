@@ -27,15 +27,17 @@ function DemoButton() {
   }
 
   return (
-    <button
-      onClick={handleDemo}
-      disabled={loading}
-      className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-60"
-    >
-      {loading ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
-      {loading ? 'Menyiapkan demo...' : 'Coba Demo Admin Klinik'}
-    </button>
-    {error && <p className="text-xs text-red-500 mt-2 font-medium">{error}</p>}
+    <>
+      <button
+        onClick={handleDemo}
+        disabled={loading}
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-60"
+      >
+        {loading ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
+        {loading ? 'Menyiapkan demo...' : 'Coba Demo Admin Klinik'}
+      </button>
+      {error && <p className="text-xs text-red-500 mt-2 font-medium">{error}</p>}
+    </>
   )
 }
 
