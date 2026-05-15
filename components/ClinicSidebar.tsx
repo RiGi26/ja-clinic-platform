@@ -90,8 +90,8 @@ export default function ClinicSidebar({ role, userName, userSub }: Props) {
           <Image
             src="/images/Icon.png"
             alt="Japan Arena Corp"
-            width={36} height={36}
-            className="w-9 h-9 object-contain flex-shrink-0"
+            width={48} height={48}
+            className="w-12 h-12 object-contain flex-shrink-0"
             priority
           />
           {!collapsed && (

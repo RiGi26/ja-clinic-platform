@@ -46,16 +46,23 @@ export default function LoginPage() {
         </div>
 
         {/* Logo */}
-        <div className="relative z-10 px-10 pt-10">
-          <div className="flex items-center gap-3">
+        <div className="relative z-10 px-10 pt-8">
+          <a
+            href="/lms-landing"
+            className="group inline-flex items-center gap-2 w-fit"
+            title="Kembali ke halaman utama"
+          >
             <Image
               src="/images/logo-dark.png"
               alt="Japan Arena Corp"
-              width={200} height={60}
-              className="h-12 w-auto object-contain"
+              width={280} height={84}
+              className="w-[220px] h-auto object-contain"
               priority
             />
-          </div>
+            <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 text-white/50 text-xs font-medium whitespace-nowrap">
+              ← Beranda
+            </span>
+          </a>
         </div>
 
         {/* Main copy */}
@@ -84,9 +91,9 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 px-10 pb-8">
-          <p className="text-white/30 text-sm font-medium">
-            Clinic Platform · Sistem Manajemen Klinik Modern
+        <div className="relative z-10 p-10 pt-6">
+          <p className="text-white/40 text-sm font-medium">
+            Clinic Platform · by Japan Arena Corp
           </p>
         </div>
       </div>
@@ -96,15 +103,17 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
 
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
+          <a href="/lms-landing" className="flex items-center gap-2 mb-8 lg:hidden group">
             <Image
               src="/images/Icon.png"
               alt="Japan Arena Corp"
-              width={36} height={36}
-              className="w-9 h-9 object-contain"
+              width={40} height={40}
+              className="w-10 h-auto object-contain"
             />
-            <p className="font-black text-[#0C2340] text-lg tracking-tight">Clinic Platform</p>
-          </div>
+            <span className="text-xs text-gray-400 group-hover:text-[#0891B2] transition-colors duration-150 font-medium">
+              ← Beranda
+            </span>
+          </a>
 
           {/* Card */}
           <div
