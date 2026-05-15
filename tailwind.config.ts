@@ -9,12 +9,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary:   { DEFAULT: '#0891B2', hover: '#0e7490' },
-        secondary: { DEFAULT: '#0C2340' },
-        accent:    { DEFAULT: '#06B6D4' },
-        success:   { DEFAULT: '#10B981' },
-        warning:   { DEFAULT: '#F59E0B' },
-        danger:    { DEFAULT: '#EF4444' },
+        primary:     { DEFAULT: '#0891B2', hover: '#0e7490' },
+        secondary:   { DEFAULT: '#0C2340' },
+        accent:      { DEFAULT: '#06B6D4' },
+        success:     { DEFAULT: '#10B981' },
+        warning:     { DEFAULT: '#F59E0B' },
+        danger:      { DEFAULT: '#EF4444' },
+        destructive: { DEFAULT: '#EF4444' },
+        background:  '#F0F9FF',
+        muted: {
+          DEFAULT:    '#E0F2FE',
+          foreground: '#64748B',
+        },
         bg: {
           DEFAULT: '#F0F9FF',
           card:    '#FFFFFF',
