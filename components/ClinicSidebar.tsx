@@ -7,6 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
+  ClipboardList, BarChart3,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -16,12 +17,13 @@ type NavItem = { href: string; Icon: LucideIcon; label: string }
 
 const NAV: Record<Role, NavItem[]> = {
   admin: [
-    { href: '/admin',                        Icon: LayoutDashboard, label: 'Dashboard'        },
-    { href: '/admin/patients',               Icon: Users,           label: 'Manajemen Pasien' },
-    { href: '/admin/appointments/walkin',    Icon: Clock,           label: 'Walk-in'          },
-    { href: '/admin/schedule',               Icon: Calendar,        label: 'Jadwal Dokter'    },
-    { href: '/admin/billing',                Icon: CreditCard,      label: 'Billing'          },
-    { href: '/admin/settings',               Icon: Settings,        label: 'Pengaturan'       },
+    { href: '/admin',                     Icon: LayoutDashboard, label: 'Dashboard'        },
+    { href: '/admin/appointments',        Icon: ClipboardList,   label: 'Antrian'          },
+    { href: '/admin/patients',            Icon: Users,           label: 'Pasien'           },
+    { href: '/admin/schedule',            Icon: Calendar,        label: 'Jadwal Dokter'    },
+    { href: '/admin/billing',             Icon: CreditCard,      label: 'Billing'          },
+    { href: '/admin/laporan',             Icon: BarChart3,       label: 'Laporan'          },
+    { href: '/admin/settings',            Icon: Settings,        label: 'Pengaturan'       },
   ],
   doctor: [
     { href: '/doctor',         Icon: LayoutDashboard, label: 'Dashboard'     },

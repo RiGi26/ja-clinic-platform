@@ -1,0 +1,239 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import TopBar from '@/components/TopBar'
+import { BarChart3, Users, CheckCircle, XCircle, TrendingUp, DollarSign, Clock } from 'lucide-react'
+
+function fmtRupiah(n: number) {
+  if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1).replace('.0', '')}jt`
+  if (n >= 1_000)     return `Rp ${(n / 1_000).toFixed(0)}rb`
+  return `Rp ${n.toLocaleString('id-ID')}`
+}
+
+const PAY_LABEL: Record<string, string> = { cash: 'Tunai', transfer: 'Transfer', bpjs: 'BPJS', insurance: 'Asuransi' }
+const PAY_COLOR: Record<string, string> = {
+  cash: 'bg-emerald-500', transfer: 'bg-blue-500', bpjs: 'bg-cyan-500', insurance: 'bg-violet-500',
+}
+
+type Data = {
+  totalPasien: number; selesai: number; batal: number; menunggu: number
+  walkin: number; booking: number; revenue: number; revenuePending: number
+  byPayment: Record<string, number>
+  byDoctor: { doctor_id: string; full_name: string; specialty: string; total: number; selesai: number; menunggu: number }[]
+}
+
+export default function LaporanPage() {
+  const [mode, setMode] = useState<'today' | 'month'>('today')
+  const [data, setData] = useState<Data | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/admin/laporan?mode=${mode}`)
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [mode])
+
+  const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  return (
+    <div className="min-h-screen bg-background">
+      <TopBar title="Laporan" subtitle="Rekap kinerja klinik" showSearch={false} />
+      <div className="p-8">
+
+        {/* Mode toggle */}
+        <div className="flex items-center justify-between mb-7">
+          <div>
+            <h2 className="text-xl font-black text-secondary">{mode === 'today' ? 'Laporan Hari Ini' : 'Laporan Bulan Ini'}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{today}</p>
+          </div>
+          <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1 shadow-sm">
+            {(['today', 'month'] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${mode === m ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-secondary'}`}>
+                {m === 'today' ? 'Hari Ini' : 'Bulan Ini'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : !data ? (
+          <div className="bg-white rounded-2xl p-16 text-center border border-gray-100">
+            <p className="text-muted-foreground">Gagal memuat data</p>
+          </div>
+        ) : (
+          <>
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+              {[
+                { label: 'Total Pasien',      value: data.totalPasien, Icon: Users,        color: 'bg-blue-50 text-blue-600',     iconBg: 'bg-blue-100' },
+                { label: 'Selesai',           value: data.selesai,     Icon: CheckCircle,  color: 'bg-emerald-50 text-emerald-600', iconBg: 'bg-emerald-100' },
+                { label: 'Dibatalkan',        value: data.batal,       Icon: XCircle,      color: 'bg-red-50 text-red-500',       iconBg: 'bg-red-100' },
+                { label: 'Masih Menunggu',   value: data.menunggu,    Icon: Clock,        color: 'bg-amber-50 text-amber-600',   iconBg: 'bg-amber-100' },
+              ].map(s => (
+                <div key={s.label} className={`rounded-2xl p-6 border border-transparent ${s.color}`}>
+                  <div className={`w-10 h-10 ${s.iconBg} rounded-xl flex items-center justify-center mb-3`}>
+                    <s.Icon size={18} className="opacity-80" />
+                  </div>
+                  <p className="text-[11px] uppercase tracking-widest font-bold opacity-60 mb-1">{s.label}</p>
+                  <p className="text-4xl font-black tabular-nums">{s.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Revenue + Tipe */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-7">
+
+              {/* Revenue cards */}
+              <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                      <DollarSign size={18} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Revenue Lunas</p>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-secondary tabular-nums">{fmtRupiah(data.revenue)}</p>
+                  {Object.entries(data.byPayment).length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {Object.entries(data.byPayment).map(([method, amount]) => (
+                        <div key={method} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${PAY_COLOR[method] ?? 'bg-gray-400'}`} />
+                            <span className="font-semibold text-muted-foreground">{PAY_LABEL[method] ?? method}</span>
+                          </div>
+                          <span className="font-bold text-secondary">{fmtRupiah(amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <TrendingUp size={18} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Pending</p>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-secondary tabular-nums">{fmtRupiah(data.revenuePending)}</p>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-muted-foreground">Walk-in</span>
+                      <span className="font-bold text-secondary">{data.walkin} pasien</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-muted-foreground">Booking</span>
+                      <span className="font-bold text-secondary">{data.booking} pasien</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tipe pie */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <p className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground mb-5">
+                  Tipe Kunjungan
+                </p>
+                {data.totalPasien > 0 ? (
+                  <>
+                    <div className="relative flex items-center justify-center mb-5">
+                      <svg width="120" height="120" viewBox="0 0 120 120">
+                        {(() => {
+                          const walkPct  = data.walkin / data.totalPasien
+                          const bookPct  = data.booking / data.totalPasien
+                          const r = 45; const cx = 60; const cy = 60
+                          const circ = 2 * Math.PI * r
+                          return (
+                            <>
+                              <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E0F2FE" strokeWidth="18" />
+                              <circle cx={cx} cy={cy} r={r} fill="none" stroke="#0891B2" strokeWidth="18"
+                                strokeDasharray={`${walkPct * circ} ${circ}`}
+                                strokeDashoffset={circ * 0.25}
+                                style={{ transform: 'rotate(-90deg)', transformOrigin: '60px 60px' }} />
+                              <circle cx={cx} cy={cy} r={r} fill="none" stroke="#6366F1" strokeWidth="18"
+                                strokeDasharray={`${bookPct * circ} ${circ}`}
+                                strokeDashoffset={-walkPct * circ + circ * 0.25}
+                                style={{ transform: 'rotate(-90deg)', transformOrigin: '60px 60px' }} />
+                              <text x={cx} y={cy+5} textAnchor="middle" className="font-black" fontSize="18" fontWeight="900" fill="#0C2340">
+                                {data.totalPasien}
+                              </text>
+                            </>
+                          )
+                        })()}
+                      </svg>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary" /><span className="font-semibold">Walk-in</span></div>
+                        <span className="font-black">{data.walkin} <span className="text-xs text-muted-foreground font-normal">({Math.round(data.walkin/data.totalPasien*100)}%)</span></span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-violet-500" /><span className="font-semibold">Booking</span></div>
+                        <span className="font-black">{data.booking} <span className="text-xs text-muted-foreground font-normal">({Math.round(data.booking/data.totalPasien*100)}%)</span></span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">Belum ada data</div>
+                )}
+              </div>
+            </div>
+
+            {/* Per Dokter */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 p-6 border-b border-gray-100">
+                <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <BarChart3 size={16} className="text-primary" />
+                </div>
+                <h3 className="font-black text-secondary">Kinerja Per Dokter</h3>
+              </div>
+              {data.byDoctor.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground text-sm">Belum ada data dokter</div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {data.byDoctor.map(doc => (
+                    <div key={doc.doctor_id} className="p-5 flex items-center gap-5">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-black text-sm flex-shrink-0">
+                        {doc.full_name.split(' ').filter((w: string) => w !== 'Dr.').map((w: string) => w[0]).slice(0,2).join('')}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black text-secondary text-sm">{doc.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{doc.specialty}</p>
+                      </div>
+                      <div className="flex items-center gap-6 text-center">
+                        <div><p className="text-2xl font-black text-secondary tabular-nums">{doc.total}</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Total</p></div>
+                        <div><p className="text-2xl font-black text-emerald-600 tabular-nums">{doc.selesai}</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Selesai</p></div>
+                        <div><p className="text-2xl font-black text-amber-500 tabular-nums">{doc.menunggu}</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Menunggu</p></div>
+                      </div>
+                      {doc.total > 0 && (
+                        <div className="w-24">
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full transition-all"
+                              style={{ width: `${Math.round(doc.selesai/doc.total*100)}%` }} />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1 text-right font-bold">
+                            {Math.round(doc.selesai/doc.total*100)}% selesai
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
