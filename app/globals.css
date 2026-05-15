@@ -1,37 +1,54 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --primary:   #0891B2;
-  --secondary: #0C2340;
-  --accent:    #06B6D4;
-  --success:   #10B981;
-  --warning:   #F59E0B;
-  --danger:    #EF4444;
-  --bg:        #F0F9FF;
-  --bg-card:   #FFFFFF;
-  --border:    rgba(0,0,0,0.06);
+@theme {
+  /* ── Brand Colors ──────────────────────────────── */
+  --color-primary:          #0891B2;
+  --color-primary-hover:    #0e7490;
+  --color-secondary:        #0C2340;
+  --color-accent:           #06B6D4;
+  --color-success:          #10B981;
+  --color-warning:          #F59E0B;
+  --color-danger:           #EF4444;
+  --color-destructive:      #EF4444;
+  --color-background:       #F0F9FF;
+  --color-muted:            #E0F2FE;
+  --color-muted-foreground: #64748B;
+  --color-bg:               #F0F9FF;
+  --color-bg-card:          #FFFFFF;
+
+  /* ── Typography ────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* ── Radius ────────────────────────────────────── */
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* ── Shadows ───────────────────────────────────── */
+  --shadow-card:  0 4px 24px rgba(0,0,0,0.06);
+  --shadow-panel: 0 8px 40px rgba(0,0,0,0.10);
 }
 
-* { box-sizing: border-box; }
+/* ── Base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
 html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: var(--bg);
-  color: var(--secondary);
+  background-color: #F0F9FF;
+  color: #0C2340;
   line-height: 1.6;
 }
 
-/* ── Sidebar collapse ──────────────────────────── */
+/* ── Sidebar collapse ──────────────────────────────── */
 .clinic-content { transition: margin-left 0.3s ease; }
+
 @media (min-width: 768px) {
   .clinic-content                        { margin-left: 16rem; }
   html.sidebar-collapsed .clinic-content { margin-left: 4rem;  }
 }
 
-/* ── Animations ────────────────────────────────── */
+/* ── Animations ────────────────────────────────────── */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -40,10 +57,11 @@ body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
 .animate-fade-in-up { animation: fadeInUp 0.3s ease forwards; }
 .animate-fade-in    { animation: fadeIn   0.2s ease forwards; }
 
-/* ── Print ─────────────────────────────────────── */
+/* ── Print ─────────────────────────────────────────── */
 @media print {
   @page { size: A4; margin: 1.5cm; }
   body  { background: white !important; }
@@ -52,10 +70,10 @@ body {
   .clinic-content { margin-left: 0 !important; }
 }
 
-/* ── Scrollbar ─────────────────────────────────── */
+/* ── Scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-track { background: #F0F9FF; }
 ::-webkit-scrollbar-thumb { background: #BAE6FD; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+::-webkit-scrollbar-thumb:hover { background: #0891B2; }
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
