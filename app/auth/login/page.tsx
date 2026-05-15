@@ -2,7 +2,30 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Loader2, FlaskConical } from 'lucide-react'
+
+function DemoButton() {
+  const [loading, setLoading] = useState(false)
+
+  async function handleDemo() {
+    setLoading(true)
+    const res  = await fetch('/api/demo-clinic-login', { method: 'POST' })
+    const data = await res.json()
+    if (data.success) window.location.href = data.redirectTo ?? '/admin'
+    else setLoading(false)
+  }
+
+  return (
+    <button
+      onClick={handleDemo}
+      disabled={loading}
+      className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-60"
+    >
+      {loading ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
+      {loading ? 'Menyiapkan demo...' : 'Coba Demo Admin Klinik'}
+    </button>
+  )
+}
 
 export default function LoginPage() {
   const [email,        setEmail]        = useState('')
@@ -206,7 +229,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-5">
+          {/* Demo button */}
+          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
+            <p className="text-xs text-gray-400 mb-3">Ingin lihat platform dulu tanpa akun?</p>
+            <DemoButton />
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-4">
             © {new Date().getFullYear()} Japan Arena Corp · Clinic Platform
           </p>
         </div>

@@ -16,11 +16,12 @@ type NavItem = { href: string; Icon: LucideIcon; label: string }
 
 const NAV: Record<Role, NavItem[]> = {
   admin: [
-    { href: '/admin',          Icon: LayoutDashboard, label: 'Dashboard'        },
-    { href: '/admin/patients', Icon: Users,           label: 'Manajemen Pasien' },
-    { href: '/admin/schedule', Icon: Calendar,        label: 'Jadwal Dokter'    },
-    { href: '/admin/billing',  Icon: CreditCard,      label: 'Billing'          },
-    { href: '/admin/settings', Icon: Settings,        label: 'Pengaturan'       },
+    { href: '/admin',                        Icon: LayoutDashboard, label: 'Dashboard'        },
+    { href: '/admin/patients',               Icon: Users,           label: 'Manajemen Pasien' },
+    { href: '/admin/appointments/walkin',    Icon: Clock,           label: 'Walk-in'          },
+    { href: '/admin/schedule',               Icon: Calendar,        label: 'Jadwal Dokter'    },
+    { href: '/admin/billing',                Icon: CreditCard,      label: 'Billing'          },
+    { href: '/admin/settings',               Icon: Settings,        label: 'Pengaturan'       },
   ],
   doctor: [
     { href: '/doctor',         Icon: LayoutDashboard, label: 'Dashboard'     },

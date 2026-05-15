@@ -1,35 +1,54 @@
+import { redirect } from 'next/navigation'
+import { getClinicUser } from '@/lib/clinic'
+import { createAdminClient } from '@/lib/supabase/server'
 import TopBar from '@/components/TopBar'
 import { DollarSign, Send, Download } from 'lucide-react'
 
-const SUMMARY = [
-  { label: 'Belum Bayar',       value: 'Rp 12.5M', count: 23  },
-  { label: 'Lunas Bulan Ini',   value: 'Rp 45.2M', count: 147 },
-  { label: 'Total Outstanding', value: 'Rp 18.3M', count: 31  },
-]
+export const dynamic = 'force-dynamic'
 
-const INVOICES = [
-  { id: 'INV-2024-001', patient: 'Andi Wijaya',    noRM: 'RM-2024-001', date: '15 Mei 2026', amount: 'Rp 450.000', status: 'Lunas',   avatar: 'AW' },
-  { id: 'INV-2024-002', patient: 'Siti Nurhaliza', noRM: 'RM-2024-002', date: '14 Mei 2026', amount: 'Rp 320.000', status: 'Pending', avatar: 'SN' },
-  { id: 'INV-2024-003', patient: 'Rudi Hartono',   noRM: 'RM-2024-003', date: '14 Mei 2026', amount: 'Rp 580.000', status: 'Lunas',   avatar: 'RH' },
-  { id: 'INV-2024-004', patient: 'Maya Lestari',   noRM: 'RM-2024-004', date: '13 Mei 2026', amount: 'Rp 750.000', status: 'Pending', avatar: 'ML' },
-]
+function fmtRupiah(n: number) {
+  if (n >= 1_000_000) return `Rp ${(n/1_000_000).toFixed(1).replace('.0','')}jt`
+  if (n >= 1_000)     return `Rp ${(n/1_000).toFixed(0)}rb`
+  return `Rp ${n.toLocaleString('id-ID')}`
+}
 
 const AVATAR_COLORS = ['from-cyan-400 to-blue-500','from-violet-400 to-purple-600','from-emerald-400 to-teal-600','from-orange-400 to-red-500']
-
 function avatarColor(name: string) {
-  const sum = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  const sum = name.split('').reduce((a,c) => a+c.charCodeAt(0),0)
   return AVATAR_COLORS[sum % AVATAR_COLORS.length]
 }
 
-export const dynamic = 'force-dynamic'
+export default async function BillingPage() {
+  const user = await getClinicUser()
+  if (user.role !== 'admin') redirect('/auth/login')
 
-export default function BillingPage() {
+  const db = createAdminClient()
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+  const { data: billings } = await db
+    .from('billing')
+    .select('id, invoice_number, total, status, created_at, patients(full_name, no_rm)')
+    .eq('clinic_id', user.clinic_id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  const bills = (billings ?? []) as any[]
+  const pending = bills.filter(b => b.status === 'pending')
+  const paid    = bills.filter(b => b.status === 'paid' && b.created_at >= monthStart)
+  const totalPending = pending.reduce((s, b) => s + (b.total ?? 0), 0)
+  const totalPaid    = paid.reduce((s, b) => s + (b.total ?? 0), 0)
+
+  const SUMMARY = [
+    { label: 'Belum Bayar',       value: fmtRupiah(totalPending), count: pending.length },
+    { label: 'Lunas Bulan Ini',   value: fmtRupiah(totalPaid),    count: paid.length    },
+    { label: 'Total Invoice',     value: fmtRupiah(totalPending + totalPaid), count: bills.length },
+  ]
+
   return (
     <div className="min-h-screen bg-background">
       <TopBar title="Billing" subtitle="Kelola pembayaran dan invoice" />
-
       <div className="p-8">
-        {/* Summary cards */}
         <div className="grid grid-cols-3 gap-5 mb-7">
           {SUMMARY.map(s => (
             <div key={s.label} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
@@ -45,64 +64,59 @@ export default function BillingPage() {
           ))}
         </div>
 
-        {/* Invoice list */}
-        <div className="space-y-3">
-          {INVOICES.map(inv => (
-            <div
-              key={inv.id}
-              className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up"
-            >
-              <div className="flex items-center gap-5">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(inv.patient)} flex items-center justify-center text-white font-black text-base flex-shrink-0`}>
-                  {inv.avatar}
+        {bills.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
+            <p className="text-muted-foreground font-semibold text-sm">Belum ada data billing</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {bills.map((b: any) => {
+              const patientName = b.patients?.full_name ?? 'Pasien'
+              const noRM        = b.patients?.no_rm ?? '—'
+              const date        = new Date(b.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })
+              return (
+                <div key={b.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                  <div className="flex items-center gap-5">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(patientName)} flex items-center justify-center text-white font-black text-base flex-shrink-0`}>
+                      {patientName.split(' ').map((w:string) => w[0]).slice(0,2).join('').toUpperCase()}
+                    </div>
+                    <div className="flex-1 grid grid-cols-5 gap-4 items-center">
+                      <div>
+                        <p className="font-black text-secondary text-sm">{patientName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{noRM}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Invoice</p>
+                        <p className="text-sm font-bold text-secondary font-mono">{b.invoice_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Tanggal</p>
+                        <p className="text-sm font-bold text-secondary">{date}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Total</p>
+                        <p className="text-base font-black text-secondary tabular-nums">{fmtRupiah(b.total ?? 0)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 justify-end">
+                        <span className={`px-3 py-1.5 rounded-full font-bold text-xs ${b.status === 'paid' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                          {b.status === 'paid' ? 'Lunas' : 'Pending'}
+                        </span>
+                        {b.status === 'pending' && (
+                          <button className="p-2 hover:bg-primary/10 rounded-xl transition-colors" title="Kirim WA">
+                            <Send size={16} className="text-primary" />
+                          </button>
+                        )}
+                        <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Download">
+                          <Download size={16} className="text-gray-500" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="flex-1 grid grid-cols-5 gap-4 items-center">
-                  <div>
-                    <p className="font-black text-secondary text-sm">{inv.patient}</p>
-                    <p className="text-xs text-muted-foreground font-semibold mt-0.5">{inv.noRM}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Invoice ID</p>
-                    <p className="text-sm font-bold text-secondary font-mono">{inv.id}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Tanggal</p>
-                    <p className="text-sm font-bold text-secondary">{inv.date}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Total</p>
-                    <p className="text-base font-black text-secondary tabular-nums">{inv.amount}</p>
-                  </div>
-                  <div className="flex items-center gap-2 justify-end">
-                    <span className={`px-3 py-1.5 rounded-full font-bold text-xs ${
-                      inv.status === 'Lunas' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
-                    }`}>
-                      {inv.status}
-                    </span>
-                    {inv.status === 'Pending' && (
-                      <button className="p-2 hover:bg-primary/10 rounded-xl transition-colors" title="Kirim WA">
-                        <Send size={16} className="text-primary" />
-                      </button>
-                    )}
-                    <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors" title="Download">
-                      <Download size={16} className="text-gray-500" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {inv.status === 'Pending' && (
-                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground font-semibold">Pengingat terakhir dikirim 2 hari lalu</p>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors font-bold text-sm">
-                    <Send size={14} /> Kirim WA
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
