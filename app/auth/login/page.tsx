@@ -1,28 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Loader2, Activity } from 'lucide-react'
 
 export default function LoginPage() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+  const [email,        setEmail]        = useState('')
+  const [password,     setPassword]     = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
     setError('')
+    setLoading(true)
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
+    const res  = await fetch('/api/auth/login', {
+      method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body   : JSON.stringify({ email, password }),
     })
-
     const data = await res.json()
+
     if (!res.ok) {
-      setError(data.error ?? 'Login gagal')
+      setError(data.error ?? 'Email atau password salah.')
       setLoading(false)
       return
     }
@@ -31,66 +32,173 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F9FF] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#F0F9FF] flex">
+
+      {/* ── Left: Branding ───────────────────────────────── */}
+      <div
+        className="hidden lg:flex flex-col justify-between w-[52%] relative overflow-hidden"
+        style={{ background: 'linear-gradient(145deg, #0A2342, #0C3A6B)' }}
+      >
+        {/* Subtle bg circle */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-[500px] h-[500px] rounded-full bg-cyan-500/[0.05]" />
+        </div>
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#0891B2] flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Activity size={28} className="text-white" />
+        <div className="relative z-10 px-10 pt-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center">
+              <Activity size={20} className="text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-white font-black text-base leading-tight tracking-tight">Clinic Platform</p>
+              <p className="text-cyan-400/70 text-[11px] font-bold uppercase tracking-widest">by Japan Arena Corp</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-black text-[#0C2340] tracking-tight">Clinic Platform</h1>
-          <p className="text-sm text-gray-400 mt-1">Masuk ke akun Anda</p>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-[20px] border border-gray-100 p-7 shadow-card">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                placeholder="nama@klinik.com"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-transparent transition-all"
-              />
-            </div>
+        {/* Main copy */}
+        <div className="relative z-10 px-10 pb-6">
+          <h1 className="text-4xl font-black text-white leading-tight tracking-tight mb-4">
+            Portal Manajemen<br />Klinik Anda
+          </h1>
+          <p className="text-white/60 text-base mb-8 leading-relaxed">
+            Kelola pasien, jadwal dokter, dan laporan klinik
+            dalam satu platform yang mudah digunakan.
+          </p>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-transparent transition-all"
-              />
+          <div className="space-y-3">
+            {[
+              { emoji: '📅', text: 'Jadwal appointment & antrian digital'     },
+              { emoji: '📋', text: 'Rekam medis terpusat & mudah diakses'     },
+              { emoji: '📲', text: 'Notifikasi WA otomatis ke pasien'          },
+              { emoji: '📊', text: 'Laporan keuangan & billing otomatis'       },
+            ].map(f => (
+              <div key={f.emoji} className="flex items-center gap-3">
+                <span className="text-xl flex-shrink-0">{f.emoji}</span>
+                <span className="text-white/75 text-sm font-semibold">{f.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 px-10 pb-8">
+          <p className="text-white/30 text-sm font-medium">
+            Clinic Platform · Sistem Manajemen Klinik Modern
+          </p>
+        </div>
+      </div>
+
+      {/* ── Right: Form ──────────────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-md">
+
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="w-9 h-9 rounded-xl bg-[#0891B2] flex items-center justify-center">
+              <Activity size={18} className="text-white" />
             </div>
+            <p className="font-black text-[#0C2340] text-lg tracking-tight">Clinic Platform</p>
+          </div>
+
+          {/* Card */}
+          <div
+            className="bg-white rounded-[24px] p-8 border border-gray-100"
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.10)' }}
+          >
+            <h2 className="text-2xl font-black text-[#0C2340] tracking-tight mb-1">Selamat Datang 👋</h2>
+            <p className="text-gray-400 text-sm mb-7">
+              Login dengan akun yang telah didaftarkan
+            </p>
 
             {error && (
-              <p className="text-xs text-red-500 font-medium bg-red-50 px-3 py-2 rounded-lg">
-                {error}
-              </p>
+              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5">
+                <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-[#0891B2] hover:bg-[#0e7490] text-white font-black rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm"
-            >
-              {loading ? 'Memproses...' : 'Masuk'}
-            </button>
-          </form>
-        </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="email@klinik.com"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-[#0C2340] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-transparent transition-all"
+                />
+              </div>
 
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-[#0C2340] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-transparent transition-all pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-2xl text-white font-black text-sm tracking-tight transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  background  : 'linear-gradient(135deg, #0A2342 0%, #0891B2 100%)',
+                  boxShadow   : '0 4px 20px rgba(8,145,178,0.35)',
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" /> Memproses...
+                  </span>
+                ) : (
+                  '🏥 Masuk ke Portal'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+              <p className="text-sm text-gray-400">
+                Akun bermasalah?{' '}
+                <a
+                  href="https://wa.me/6281296917963"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[#0891B2] hover:underline"
+                >
+                  Hubungi Admin WA 💬
+                </a>
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-5">
+            © {new Date().getFullYear()} Japan Arena Corp · Clinic Platform
+          </p>
+        </div>
       </div>
+
     </div>
   )
 }
