@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { seedDemoClinic } from '@/lib/demo-clinic-seed'
+import { getOrCreateDemoClinic, seedDemoData } from '@/lib/demo-clinic-seed'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,13 @@ export async function POST() {
   try {
     const db = createAdminClient()
 
-    // 1. Cari atau buat user di auth
+    // 1. Buat/cari clinic DULU — dapat clinic_id valid
+    const clinicId = await getOrCreateDemoClinic(db)
+    if (!clinicId) {
+      return NextResponse.json({ error: 'Gagal membuat data klinik demo. Pastikan schema.sql sudah dijalankan.' }, { status: 500 })
+    }
+
+    // 2. Cari atau buat user di Supabase Auth
     let userId: string
     const { data: authList } = await db.auth.admin.listUsers()
     const existUser = authList?.users?.find(u => u.email === DEMO_EMAIL)
@@ -23,41 +29,44 @@ export async function POST() {
         email: DEMO_EMAIL, password: DEMO_PASS, email_confirm: true,
       })
       if (authErr || !newAuth?.user) {
-        console.error('[demo-clinic-login] createUser:', authErr?.message)
-        return NextResponse.json({ error: 'Gagal buat akun demo' }, { status: 500 })
+        return NextResponse.json({ error: 'Gagal buat akun demo: ' + authErr?.message }, { status: 500 })
       }
       userId = newAuth.user.id
     }
 
-    // 2. Upsert profil ke tabel users (pastikan selalu ada & benar)
-    await db.from('users').upsert({
+    // 3. Upsert profil user — DENGAN clinic_id yang sudah valid (bukan null)
+    const { error: upsertErr } = await db.from('users').upsert({
       id       : userId,
       email    : DEMO_EMAIL,
       full_name: 'Admin Demo Klinik',
       role     : 'admin',
       status   : 'active',
-      clinic_id: null,        // seed akan update ini
+      clinic_id: clinicId,   // ← clinic_id valid, bukan null
     }, { onConflict: 'id' })
 
-    // 3. Seed data demo (clinic, dokter, pasien, appointment)
-    await seedDemoClinic(db, userId)
+    if (upsertErr) {
+      console.error('[demo-clinic-login] upsert users error:', upsertErr.message)
+      return NextResponse.json({ error: 'Gagal simpan profil: ' + upsertErr.message }, { status: 500 })
+    }
 
-    // 4. Sign in via cookie-based client
+    // 4. Seed data (dokter, pasien, appointment, billing)
+    await seedDemoData(db, clinicId)
+
+    // 5. Sign in
     const supabase = await createClient()
     const { error: signInErr } = await supabase.auth.signInWithPassword({
       email: DEMO_EMAIL, password: DEMO_PASS,
     })
 
     if (signInErr) {
-      console.error('[demo-clinic-login] signIn:', signInErr.message)
-      return NextResponse.json({ error: 'Gagal login demo' }, { status: 401 })
+      return NextResponse.json({ error: 'Gagal login: ' + signInErr.message }, { status: 401 })
     }
 
     return NextResponse.json({ success: true, redirectTo: '/admin' })
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('[demo-clinic-login] error:', msg)
+    console.error('[demo-clinic-login] unexpected error:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
