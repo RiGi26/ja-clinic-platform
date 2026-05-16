@@ -85,7 +85,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10 px-10 pt-8">
           <a
-            href="/lms-landing"
+            href="https://ja-landingpage-platform.vercel.app"
             className="group inline-flex items-center gap-2 w-fit"
             title="Kembali ke halaman utama"
           >
@@ -140,7 +140,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
 
           {/* Mobile logo */}
-          <a href="/lms-landing" className="flex items-center gap-2 mb-8 lg:hidden group">
+          <a href="https://ja-landingpage-platform.vercel.app" className="flex items-center gap-2 mb-8 lg:hidden group">
             <Image
               src="/images/Icon.png"
               alt="Japan Arena Corp"
