@@ -2,6 +2,8 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ReactNode } from 'react'
 import ClinicSidebar from '@/components/ClinicSidebar'
+import DemoBanner from '@/components/DemoBanner'
+import { isDemoSession } from '@/lib/is-demo-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,16 +26,18 @@ async function getAdmin() {
 }
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const admin = await getAdmin()
+  const admin  = await getAdmin()
+  const isDemo = await isDemoSession()
 
   return (
     <div className="min-h-screen bg-[#F0F9FF]">
       <ClinicSidebar role="admin" userName={admin.full_name} userSub="Administrator" />
       <div className="clinic-content min-h-screen flex flex-col">
-        <main className="flex-1 p-6 lg:p-8 max-w-[1400px] w-full animate-fade-in-up">
+        <main className={`flex-1 p-6 lg:p-8 max-w-[1400px] w-full animate-fade-in-up${isDemo ? ' pb-14' : ''}`}>
           {children}
         </main>
       </div>
+      {isDemo && <DemoBanner />}
     </div>
   )
 }
