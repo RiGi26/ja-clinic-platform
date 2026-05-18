@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
-  ClipboardList, BarChart3,
+  ClipboardList, BarChart3, Tag,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -22,6 +22,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/admin/patients',            Icon: Users,           label: 'Pasien'           },
     { href: '/admin/schedule',            Icon: Calendar,        label: 'Jadwal Dokter'    },
     { href: '/admin/billing',             Icon: CreditCard,      label: 'Billing'          },
+    { href: '/admin/treatments',          Icon: Tag,             label: 'Tindakan & Tarif' },
     { href: '/admin/laporan',             Icon: BarChart3,       label: 'Laporan'          },
     { href: '/admin/settings',            Icon: Settings,        label: 'Pengaturan'       },
   ],
