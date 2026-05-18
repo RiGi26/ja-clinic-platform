@@ -4,9 +4,10 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 
 const ROLE_REDIRECT: Record<string, string> = {
-  admin:   '/admin',
-  doctor:  '/doctor',
-  patient: '/patient',
+  superadmin: '/superadmin',
+  admin:      '/admin',
+  doctor:     '/doctor',
+  patient:    '/patient',
 }
 
 export async function POST(request: Request) {
