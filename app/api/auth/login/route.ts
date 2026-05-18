@@ -28,13 +28,18 @@ export async function POST(request: Request) {
   const db = createAdminClient()
   const { data: profile } = await db
     .from('users')
-    .select('role, status')
+    .select('role, status, clinic_id')
     .eq('id', data.user.id)
     .single()
 
   if (!profile || profile.status !== 'active') {
     await supabase.auth.signOut()
     return NextResponse.json({ error: 'Akun tidak aktif.' }, { status: 403 })
+  }
+
+  if (profile.role !== 'superadmin' && !profile.clinic_id) {
+    await supabase.auth.signOut()
+    return NextResponse.json({ error: 'Akun tidak terkonfigurasi.' }, { status: 403 })
   }
 
   return NextResponse.json({
