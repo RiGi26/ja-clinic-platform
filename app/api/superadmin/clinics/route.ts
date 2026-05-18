@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const db = createAdminClient()
   let query = db
     .from('clinics')
-    .select('id, name, slug, phone, email, plan, plan_expires_at, is_active, created_at')
+    .select('id, name, slug, phone, email, plan, plan_expires_at, is_active, created_at, custom_domain')
     .order('created_at', { ascending: false })
 
   if (plan)   query = query.eq('plan', plan)

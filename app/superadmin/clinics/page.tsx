@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Plus, ExternalLink, RefreshCw, X } from 'lucide-react'
+import { Search, Plus, ExternalLink, RefreshCw, X, Globe, Link2Off } from 'lucide-react'
 
 const INPUT = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all'
 const LABEL = 'text-[10px] uppercase tracking-widest font-bold text-gray-500 block mb-2'
@@ -9,7 +9,7 @@ const LABEL = 'text-[10px] uppercase tracking-widest font-bold text-gray-500 blo
 type Clinic = {
   id: string; name: string; slug: string; phone: string | null
   plan: string; plan_expires_at: string | null; is_active: boolean
-  created_at: string; patient_count: number
+  created_at: string; patient_count: number; custom_domain?: string | null
 }
 
 const PLAN_BADGE: Record<string, string> = {
@@ -43,8 +43,16 @@ export default function ClinicsPage() {
   const [creating,   setCreating]   = useState(false)
   const [createErr,  setCreateErr]  = useState('')
 
-  const [impersonating, setImpersonating] = useState<string | null>(null)
+  const [impersonating, setImpersonating]         = useState<string | null>(null)
   const [confirmDeactivate, setConfirmDeactivate] = useState<Clinic | null>(null)
+
+  // Custom domain state
+  const [domainModal, setDomainModal]     = useState<Clinic | null>(null)
+  const [domainInput, setDomainInput]     = useState('')
+  const [domainErr,   setDomainErr]       = useState('')
+  const [domainSaving, setDomainSaving]   = useState(false)
+  const [domainSuccess, setDomainSuccess] = useState('')
+  const [confirmRemoveDomain, setConfirmRemoveDomain] = useState<Clinic | null>(null)
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
@@ -65,6 +73,35 @@ export default function ClinicsPage() {
   async function extendTrial(id: string) {
     const res = await fetch(`/api/superadmin/clinics/${id}/extend-trial`, { method: 'POST' })
     if (res.ok) { showToast('Trial diperpanjang 14 hari'); load() }
+  }
+
+  async function saveDomain() {
+    if (!domainModal) return
+    const domain = domainInput.trim().toLowerCase()
+    if (!domain) { setDomainErr('Domain tidak boleh kosong'); return }
+    if (domain.includes('://') || domain.includes('/')) {
+      setDomainErr('Jangan sertakan http:// atau path. Contoh: kliniksehat.com')
+      return
+    }
+    setDomainSaving(true); setDomainErr('')
+    const res  = await fetch(`/api/superadmin/clinics/${domainModal.id}/custom-domain`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ custom_domain: domain }),
+    })
+    const data = await res.json() as { success?: boolean; error?: string }
+    if (res.ok) {
+      setDomainSuccess(`Domain berhasil disimpan!\n\nMinta client set CNAME record:\n  ${domain} → cname.vercel-dns.com`)
+      load()
+    } else {
+      setDomainErr(data.error ?? 'Gagal menyimpan domain')
+    }
+    setDomainSaving(false)
+  }
+
+  async function removeDomain(clinic: Clinic) {
+    await fetch(`/api/superadmin/clinics/${clinic.id}/custom-domain`, { method: 'DELETE' })
+    showToast('Custom domain dihapus')
+    setConfirmRemoveDomain(null); load()
   }
 
   async function changePlan(id: string, plan: string) {
@@ -167,7 +204,7 @@ export default function ClinicsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['Nama Klinik', 'Slug', 'Telepon', 'Plan', 'Trial Habis', 'Pasien', 'Status', 'Aksi'].map(h => (
+                {['Nama Klinik', 'Slug', 'Telepon', 'Plan', 'Trial Habis', 'Pasien', 'Custom Domain', 'Status', 'Aksi'].map(h => (
                   <th key={h} className="text-left text-[10px] uppercase tracking-widest font-bold text-gray-400 px-4 py-3 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -194,6 +231,24 @@ export default function ClinicsPage() {
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 font-bold">{c.patient_count}</td>
                   <td className="px-4 py-3">
+                    {c.custom_domain ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold">
+                          <Globe size={10} /> {c.custom_domain}
+                        </span>
+                        <button onClick={() => setConfirmRemoveDomain(c)} title="Hapus domain"
+                          className="p-1 text-gray-300 hover:text-red-500 transition-colors">
+                          <Link2Off size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => { setDomainModal(c); setDomainInput(''); setDomainErr(''); setDomainSuccess('') }}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                        + Set Domain
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                       {c.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
@@ -203,6 +258,10 @@ export default function ClinicsPage() {
                       <button onClick={() => extendTrial(c.id)}
                         className="px-2 py-1 text-[10px] font-bold bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors whitespace-nowrap">
                         +14 Hari
+                      </button>
+                      <button onClick={() => { setDomainModal(c); setDomainInput(c.custom_domain ?? ''); setDomainErr(''); setDomainSuccess('') }}
+                        className="px-2 py-1 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors whitespace-nowrap">
+                        <Globe size={10} className="inline mr-0.5" /> Domain
                       </button>
                       <button onClick={() => impersonate(c.id)} disabled={impersonating === c.id}
                         className="px-2 py-1 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1 disabled:opacity-50 whitespace-nowrap">
@@ -256,6 +315,68 @@ export default function ClinicsPage() {
               <button onClick={handleCreate} disabled={creating} className="flex-1 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-700 transition-colors disabled:opacity-50">
                 {creating ? 'Membuat...' : 'Buat Klinik'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Domain Modal */}
+      {domainModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDomainModal(null)}>
+          <div className="bg-white rounded-2xl p-7 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-black text-gray-900 text-lg">Custom Domain</h3>
+              <button onClick={() => setDomainModal(null)}><X size={16} className="text-gray-500" /></button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Klinik: <strong>{domainModal.name}</strong>
+            </p>
+            {domainSuccess ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
+                <p className="text-sm font-bold text-emerald-700 mb-1">✅ Domain berhasil disimpan</p>
+                <pre className="text-xs text-emerald-600 whitespace-pre-wrap">{domainSuccess}</pre>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className={LABEL}>Domain (tanpa http://)</label>
+                  <input value={domainInput} onChange={e => setDomainInput(e.target.value)}
+                    placeholder="kliniksehat.com" className={INPUT} />
+                  {domainErr && <p className="text-sm text-red-600 mt-1 font-medium">{domainErr}</p>}
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4">
+                  <p className="text-xs font-bold text-blue-700 mb-1">📋 Instruksi DNS untuk Client:</p>
+                  <p className="text-xs text-blue-600 font-mono">
+                    CNAME: {domainInput || 'domain-client.com'} → cname.vercel-dns.com
+                  </p>
+                </div>
+              </>
+            )}
+            <div className="flex gap-3">
+              <button onClick={() => setDomainModal(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+                {domainSuccess ? 'Tutup' : 'Batal'}
+              </button>
+              {!domainSuccess && (
+                <button onClick={saveDomain} disabled={domainSaving} className="flex-1 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-700 transition-colors disabled:opacity-50">
+                  {domainSaving ? 'Menyimpan...' : 'Simpan Domain'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Domain Confirm */}
+      {confirmRemoveDomain && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setConfirmRemoveDomain(null)}>
+          <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-black text-gray-900 text-lg mb-3">Hapus Custom Domain</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Yakin hapus domain <strong>{confirmRemoveDomain.custom_domain}</strong> dari klinik <strong>{confirmRemoveDomain.name}</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmRemoveDomain(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">Batal</button>
+              <button onClick={() => removeDomain(confirmRemoveDomain)} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors">Hapus</button>
             </div>
           </div>
         </div>
