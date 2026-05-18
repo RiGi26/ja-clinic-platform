@@ -39,7 +39,7 @@ export default async function SuperAdminUsersPage() {
                     }`}>{u.role}</span>
                   </td>
                   <td className="px-5 py-3 text-xs text-gray-500">
-                    {(u.clinics as { name: string } | null)?.name ?? '—'}
+                    {(u.clinics as unknown as { name: string } | null)?.name ?? '—'}
                   </td>
                   <td className="px-5 py-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${u.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>

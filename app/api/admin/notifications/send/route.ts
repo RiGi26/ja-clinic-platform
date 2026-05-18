@@ -57,8 +57,8 @@ export async function POST(request: Request) {
 
     if (!bill) return NextResponse.json({ error: 'Invoice tidak ditemukan' }, { status: 404 })
 
-    const patient = bill.patients as { full_name: string; phone: string | null } | null
-    const clinic  = bill.clinics  as { name: string; fonnte_token: string | null } | null
+    const patient = bill.patients as unknown as { full_name: string; phone: string | null } | null
+    const clinic  = bill.clinics  as unknown as { name: string; fonnte_token: string | null } | null
 
     if (!clinic?.fonnte_token) {
       return NextResponse.json({ error: 'Fonnte token belum dikonfigurasi.' }, { status: 400 })
@@ -107,9 +107,9 @@ export async function POST(request: Request) {
 
   if (!appt) return NextResponse.json({ error: 'Appointment tidak ditemukan' }, { status: 404 })
 
-  const patient = appt.patients as { full_name: string; phone: string | null } | null
-  const doctor  = appt.doctors  as { full_name: string } | null
-  const clinic  = appt.clinics  as { name: string; fonnte_token: string | null } | null
+  const patient = appt.patients as unknown as { full_name: string; phone: string | null } | null
+  const doctor  = appt.doctors  as unknown as { full_name: string } | null
+  const clinic  = appt.clinics  as unknown as { name: string; fonnte_token: string | null } | null
 
   if (!clinic?.fonnte_token) {
     return NextResponse.json(

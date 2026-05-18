@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 
     if (!apt) return NextResponse.json({ error: 'Appointment tidak ditemukan' }, { status: 404 })
 
-    const patient = (apt as { patients: { id: string } }).patients
+    const patient = (apt as unknown as { patients: { id: string } }).patients
     const { data: history } = patient?.id ? await db
       .from('medical_records')
       .select('id, chief_complaint, soap_assessment, diagnoses, notes, created_at, doctors(full_name)')

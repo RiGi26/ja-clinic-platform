@@ -43,12 +43,12 @@ export async function GET(
 
   if (!bill) return NextResponse.json({ error: 'Invoice tidak ditemukan' }, { status: 404 })
 
-  const patient = bill.patients as { full_name: string; no_rm: string } | null
-  const clinic  = bill.clinics  as {
+  const patient = bill.patients as unknown as { full_name: string; no_rm: string } | null
+  const clinic  = bill.clinics  as unknown as {
     name: string; address: string | null; phone: string | null
     bank_name: string | null; bank_account: string | null; bank_holder: string | null; logo_url: string | null
   } | null
-  const appt    = bill.appointments as { scheduled_at: string; doctors: { full_name: string } | null } | null
+  const appt    = bill.appointments as unknown as { scheduled_at: string; doctors: { full_name: string } | null } | null
 
   if (!patient || !clinic) {
     return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 500 })
@@ -56,26 +56,27 @@ export async function GET(
 
   const items = (bill.items ?? []) as BillingItem[]
 
-  const buffer = await renderToBuffer(
-    React.createElement(InvoiceDocument, {
-      data: {
-        invoiceNumber: bill.invoice_number,
-        createdAt:     bill.created_at,
-        patient,
-        clinic,
-        doctor:      appt?.doctors ?? null,
-        appointment: appt ? { scheduled_at: appt.scheduled_at } : null,
-        items,
-        subtotal:      bill.subtotal ?? 0,
-        discount:      bill.discount ?? 0,
-        total:         bill.total ?? 0,
-        paymentMethod: bill.payment_method,
-        status:        bill.status,
-      },
-    }),
-  )
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const element = React.createElement(InvoiceDocument, {
+    data: {
+      invoiceNumber: bill.invoice_number,
+      createdAt:     bill.created_at,
+      patient:       patient!,
+      clinic:        clinic!,
+      doctor:        appt?.doctors ?? null,
+      appointment:   appt ? { scheduled_at: appt.scheduled_at } : null,
+      items,
+      subtotal:      bill.subtotal ?? 0,
+      discount:      bill.discount ?? 0,
+      total:         bill.total ?? 0,
+      paymentMethod: bill.payment_method,
+      status:        bill.status,
+    },
+  }) as any
 
-  return new Response(buffer, {
+  const buffer = await renderToBuffer(element)
+
+  return new Response(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${bill.invoice_number}.pdf"`,

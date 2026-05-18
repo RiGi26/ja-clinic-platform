@@ -73,8 +73,8 @@ export async function POST() {
   const errors: string[] = []
 
   for (const appt of appointments) {
-    const patient = appt.patients as { full_name: string; phone: string | null } | null
-    const doctor  = appt.doctors  as { full_name: string } | null
+    const patient = appt.patients as unknown as { full_name: string; phone: string | null } | null
+    const doctor  = appt.doctors  as unknown as { full_name: string } | null
 
     if (!patient?.phone) {
       errors.push(`Appointment ${appt.id}: pasien tidak memiliki nomor HP`)

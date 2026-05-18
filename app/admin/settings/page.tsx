@@ -59,7 +59,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch('/api/admin/clinic-settings').then(r => r.json()).then((d: { clinic?: typeof clinic; doctors?: Doctor[] }) => {
-      if (d.clinic)  setClinic({ name: '', address: '', phone: '', email: '', fonnte_token: '', ...d.clinic })
+      if (d.clinic)  setClinic(prev => ({ ...prev, ...(d.clinic as typeof prev) }))
       if (d.doctors) setDoctors(d.doctors)
     })
     loadNotifications()

@@ -33,8 +33,8 @@ export default async function MedicalRecordPage({
 
     if (!apt) redirect('/doctor')
 
-    const patient   = (apt as { patients: { id: string } }).patients
-    const patientId = (patient as { id: string } | null)?.id
+    const patient   = (apt as unknown as { patients: { id: string } }).patients
+    const patientId = (patient as unknown as { id: string } | null)?.id
 
     const { data: history } = patientId ? await db
       .from('medical_records')
@@ -49,7 +49,7 @@ export default async function MedicalRecordPage({
       <MedicalRecordForm
         appointment={apt as { id: string; complaint: string | null }}
         patient={patient as Parameters<typeof MedicalRecordForm>[0]['patient']}
-        history={(history ?? []) as Parameters<typeof MedicalRecordForm>[0]['history']}
+        history={(history ?? []) as unknown as Parameters<typeof MedicalRecordForm>[0]['history']}
       />
     )
   }
@@ -70,7 +70,7 @@ export default async function MedicalRecordPage({
     <div className="min-h-screen bg-background">
       <TopBar title="Rekam Medis" subtitle="Riwayat pemeriksaan pasien" />
       <div className="p-8">
-        <RecordsListClient records={(records ?? []) as Parameters<typeof RecordsListClient>[0]['records']} />
+        <RecordsListClient records={(records ?? []) as unknown as Parameters<typeof RecordsListClient>[0]['records']} />
       </div>
     </div>
   )
