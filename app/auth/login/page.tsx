@@ -249,6 +249,16 @@ export default function LoginPage() {
             <DemoButton />
           </div>
 
+          {/* Register link */}
+          <div className="mt-3 text-center">
+            <p className="text-xs text-gray-400">
+              Ingin pakai untuk klinik Anda?{' '}
+              <a href="/register" className="font-bold text-[#0891B2] hover:underline">
+                Daftar gratis 14 hari →
+              </a>
+            </p>
+          </div>
+
           <p className="text-center text-xs text-gray-400 mt-4">
             © {new Date().getFullYear()} Japan Arena Corp · Clinic Platform
           </p>
