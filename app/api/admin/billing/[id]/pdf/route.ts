@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { renderToBuffer, type DocumentProps } from '@react-pdf/renderer'
 import { InvoiceDocument, type BillingItem } from '@/lib/invoice-pdf'
 import React from 'react'
 
@@ -56,7 +56,6 @@ export async function GET(
 
   const items = (bill.items ?? []) as BillingItem[]
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const element = React.createElement(InvoiceDocument, {
     data: {
       invoiceNumber: bill.invoice_number,
@@ -72,7 +71,7 @@ export async function GET(
       paymentMethod: bill.payment_method,
       status:        bill.status,
     },
-  }) as any
+  }) as unknown as React.ReactElement<DocumentProps>
 
   const buffer = await renderToBuffer(element)
 

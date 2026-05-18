@@ -25,7 +25,11 @@ export async function PATCH(
   const body = await request.json() as { custom_domain?: string | null }
   const { custom_domain } = body
 
-  if (custom_domain !== null && custom_domain !== undefined) {
+  if (custom_domain === undefined) {
+    return NextResponse.json({ error: 'Field custom_domain wajib ada (string atau null)' }, { status: 400 })
+  }
+
+  if (custom_domain !== null) {
     if (typeof custom_domain !== 'string' || custom_domain.trim() === '') {
       return NextResponse.json({ error: 'Format domain tidak valid' }, { status: 400 })
     }

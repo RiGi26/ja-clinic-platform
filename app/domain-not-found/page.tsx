@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { tenantConfig } from '@/lib/tenant-config'
 
 export default function DomainNotFoundPage() {
@@ -44,12 +43,12 @@ export default function DomainNotFoundPage() {
             💬 Hubungi Support via WhatsApp
           </a>
 
-          <Link
+          <a
             href="https://ja-clinic-platform.vercel.app/auth/login"
             className="w-full py-4 rounded-2xl text-sm font-black border border-white/20 text-white/80 hover:bg-white/10 transition-all"
           >
             Login via Platform Utama →
-          </Link>
+          </a>
         </div>
 
         <p className="text-white/30 text-xs mt-8">

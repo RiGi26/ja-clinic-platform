@@ -35,13 +35,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Nama klinik ini sudah terdaftar, coba nama lain' }, { status: 409 })
   }
 
-  // Check email uniqueness in Auth
-  const { data: authList } = await db.auth.admin.listUsers()
-  const emailExists = authList?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase())
-  if (emailExists) {
-    return NextResponse.json({ error: 'Email ini sudah terdaftar, silakan login' }, { status: 409 })
-  }
-
   // Insert clinic
   const planExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -63,7 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Gagal mendaftarkan klinik: ' + (clinicErr?.message ?? 'Unknown error') }, { status: 500 })
   }
 
-  // Create auth user
+  // Create auth user — jika email sudah ada, Supabase akan return error
   const { data: authUser, error: authErr } = await db.auth.admin.createUser({
     email,
     password,
@@ -73,6 +66,11 @@ export async function POST(request: Request) {
   if (authErr || !authUser?.user) {
     // Rollback: delete clinic
     await db.from('clinics').delete().eq('id', clinic.id)
+    const isEmailTaken = authErr?.message?.toLowerCase().includes('already registered')
+      || authErr?.message?.toLowerCase().includes('already exists')
+    if (isEmailTaken) {
+      return NextResponse.json({ error: 'Email ini sudah terdaftar, silakan login' }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Gagal membuat akun: ' + (authErr?.message ?? 'Unknown error') }, { status: 500 })
   }
 
