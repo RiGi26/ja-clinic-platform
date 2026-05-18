@@ -43,11 +43,52 @@ export async function POST(request: Request) {
   const clinicId = await getClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as { type: IncomingType; appointmentId: string }
+  const body = await request.json() as { type: IncomingType; appointmentId?: string; billingId?: string }
+
+  // Handle invoice type via billingId
+  if (body.type === 'invoice' && body.billingId) {
+    const db = createAdminClient()
+    const { data: bill } = await db
+      .from('billing')
+      .select('invoice_number, total, patients(full_name, phone), clinics(name, fonnte_token)')
+      .eq('id', body.billingId)
+      .eq('clinic_id', clinicId)
+      .single()
+
+    if (!bill) return NextResponse.json({ error: 'Invoice tidak ditemukan' }, { status: 404 })
+
+    const patient = bill.patients as { full_name: string; phone: string | null } | null
+    const clinic  = bill.clinics  as { name: string; fonnte_token: string | null } | null
+
+    if (!clinic?.fonnte_token) {
+      return NextResponse.json({ error: 'Fonnte token belum dikonfigurasi.' }, { status: 400 })
+    }
+    if (!patient?.phone) {
+      return NextResponse.json({ error: 'Pasien tidak memiliki nomor HP' }, { status: 400 })
+    }
+
+    const message = buildMessage(TEMPLATES.invoice, {
+      nama:    patient.full_name,
+      klinik:  clinic.name,
+      invoice: bill.invoice_number,
+      total:   (bill.total as number ?? 0).toLocaleString('id-ID'),
+    })
+
+    const result = await sendAndLog(db, clinicId, {
+      type:      'billing_invoice',
+      recipient: patient.phone,
+      message,
+      phone:     patient.phone,
+      token:     clinic.fonnte_token,
+    })
+
+    return NextResponse.json(result, { status: result.success ? 200 : 500 })
+  }
+
   const { type, appointmentId } = body
 
-  if (!TYPE_MAP[type]) {
-    return NextResponse.json({ error: 'Tipe notifikasi tidak valid' }, { status: 400 })
+  if (!appointmentId || !TYPE_MAP[type]) {
+    return NextResponse.json({ error: 'Tipe notifikasi atau appointmentId tidak valid' }, { status: 400 })
   }
 
   const db = createAdminClient()
