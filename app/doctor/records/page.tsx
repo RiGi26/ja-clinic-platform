@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getClinicUser } from '@/lib/clinic'
 import { createAdminClient } from '@/lib/supabase/server'
+import TopBar from '@/components/TopBar'
 import MedicalRecordForm from './MedicalRecordForm'
+import RecordsListClient from './RecordsListClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,39 +16,62 @@ export default async function MedicalRecordPage({
   if (user.role !== 'doctor') redirect('/auth/login')
 
   const { apt: aptId } = await searchParams
-  if (!aptId) redirect('/doctor')
+  const db  = createAdminClient()
+  const cid = user.clinic_id
 
-  const db = createAdminClient()
+  // ── Form mode: ?apt=xxx ──────────────────────────────────────────────────
+  if (aptId) {
+    const { data: apt } = await db
+      .from('appointments')
+      .select(`
+        id, complaint, status,
+        patients(id, no_rm, full_name, date_of_birth, gender, blood_type, allergies, weight, height)
+      `)
+      .eq('id', aptId)
+      .eq('clinic_id', cid)
+      .single()
 
-  const { data: apt } = await db
-    .from('appointments')
-    .select(`
-      id, complaint, status,
-      patients(id, no_rm, full_name, date_of_birth, gender, blood_type, allergies, weight, height)
-    `)
-    .eq('id', aptId)
-    .eq('clinic_id', user.clinic_id)
-    .single()
+    if (!apt) redirect('/doctor')
 
-  if (!apt) redirect('/doctor')
+    const patient   = (apt as { patients: { id: string } }).patients
+    const patientId = (patient as { id: string } | null)?.id
 
-  const patient = (apt as any).patients
-  const patientId = patient?.id
+    const { data: history } = patientId ? await db
+      .from('medical_records')
+      .select('id, chief_complaint, soap_assessment, diagnoses, notes, created_at, doctors(full_name)')
+      .eq('patient_id', patientId)
+      .eq('clinic_id', cid)
+      .order('created_at', { ascending: false })
+      .limit(5)
+      : { data: [] }
 
-  const { data: history } = patientId ? await db
+    return (
+      <MedicalRecordForm
+        appointment={apt as { id: string; complaint: string | null }}
+        patient={patient as Parameters<typeof MedicalRecordForm>[0]['patient']}
+        history={(history ?? []) as Parameters<typeof MedicalRecordForm>[0]['history']}
+      />
+    )
+  }
+
+  // ── List mode: /doctor/records ───────────────────────────────────────────
+  const { data: records } = await db
     .from('medical_records')
-    .select('id, diagnoses, notes, created_at, doctors(full_name)')
-    .eq('patient_id', patientId)
-    .eq('clinic_id', user.clinic_id)
+    .select(`
+      id, created_at, chief_complaint, soap_assessment, icd10_codes,
+      patients ( full_name, no_rm ),
+      doctors  ( full_name )
+    `)
+    .eq('clinic_id', cid)
     .order('created_at', { ascending: false })
-    .limit(5)
-    : { data: [] }
+    .limit(50)
 
   return (
-    <MedicalRecordForm
-      appointment={apt as any}
-      patient={patient}
-      history={(history ?? []) as any}
-    />
+    <div className="min-h-screen bg-background">
+      <TopBar title="Rekam Medis" subtitle="Riwayat pemeriksaan pasien" />
+      <div className="p-8">
+        <RecordsListClient records={(records ?? []) as Parameters<typeof RecordsListClient>[0]['records']} />
+      </div>
+    </div>
   )
 }
