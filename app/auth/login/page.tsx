@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Eye, EyeOff, AlertCircle, Loader2, FlaskConical } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 
 function DemoButton() {
   const [loading, setLoading] = useState(false)
@@ -27,17 +27,28 @@ function DemoButton() {
   }
 
   return (
-    <>
+    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
+      <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+        ✨ Tidak perlu akun
+      </span>
+      <h2 className="font-black text-lg text-emerald-800 mb-1">Coba Demo Admin Klinik</h2>
+      <p className="text-sm text-emerald-700 mb-4">Langsung masuk dan eksplorasi semua fitur.</p>
       <button
         onClick={handleDemo}
         disabled={loading}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-60"
+        className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition-colors disabled:opacity-60"
       >
-        {loading ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
-        {loading ? 'Menyiapkan demo...' : 'Coba Demo Admin Klinik'}
+        {loading ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            Menyiapkan demo...
+          </>
+        ) : (
+          '🚀 Mulai Demo Sekarang'
+        )}
       </button>
       {error && <p className="text-xs text-red-500 mt-2 font-medium">{error}</p>}
-    </>
+    </div>
   )
 }
 
@@ -77,12 +88,10 @@ export default function LoginPage() {
         className="hidden lg:flex flex-col justify-between w-[52%] relative overflow-hidden"
         style={{ background: 'linear-gradient(145deg, #0A2342, #0C3A6B)' }}
       >
-        {/* Subtle bg circle */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-[500px] h-[500px] rounded-full bg-cyan-500/[0.05]" />
         </div>
 
-        {/* Logo */}
         <div className="relative z-10 px-10 pt-8">
           <a
             href="https://ja-landingpage-platform.vercel.app"
@@ -102,7 +111,6 @@ export default function LoginPage() {
           </a>
         </div>
 
-        {/* Main copy */}
         <div className="relative z-10 px-10 pb-6">
           <h1 className="text-4xl font-black text-white leading-tight tracking-tight mb-4">
             Portal Manajemen<br />Klinik Anda
@@ -114,10 +122,10 @@ export default function LoginPage() {
 
           <div className="space-y-3">
             {[
-              { emoji: '📅', text: 'Jadwal appointment & antrian digital'     },
-              { emoji: '📋', text: 'Rekam medis terpusat & mudah diakses'     },
-              { emoji: '📲', text: 'Notifikasi WA otomatis ke pasien'          },
-              { emoji: '📊', text: 'Laporan keuangan & billing otomatis'       },
+              { emoji: '📅', text: 'Jadwal appointment & antrian digital'  },
+              { emoji: '📋', text: 'Rekam medis terpusat & mudah diakses'  },
+              { emoji: '📲', text: 'Notifikasi WA otomatis ke pasien'       },
+              { emoji: '📊', text: 'Laporan keuangan & billing otomatis'    },
             ].map(f => (
               <div key={f.emoji} className="flex items-center gap-3">
                 <span className="text-xl flex-shrink-0">{f.emoji}</span>
@@ -127,7 +135,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="relative z-10 p-10 pt-6">
           <p className="text-white/40 text-sm font-medium">
             Clinic Platform · by Japan Arena Corp
@@ -135,7 +142,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Right: Form ──────────────────────────────────── */}
+      {/* ── Right: Content ───────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md">
 
@@ -152,16 +159,18 @@ export default function LoginPage() {
             </span>
           </a>
 
-          {/* Card */}
-          <div
-            className="bg-white rounded-[24px] p-8 border border-gray-100"
-            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.10)' }}
-          >
-            <h2 className="text-2xl font-black text-[#0C2340] tracking-tight mb-1">Selamat Datang 👋</h2>
-            <p className="text-gray-400 text-sm mb-7">
-              Login dengan akun yang telah didaftarkan
-            </p>
+          {/* BLOK A — Demo (PRIMARY) */}
+          <DemoButton />
 
+          {/* DIVIDER */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 whitespace-nowrap">atau masuk dengan akun Anda</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* BLOK B — Form Login (SECONDARY) */}
+          <div>
             {error && (
               <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5">
                 <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
@@ -214,8 +223,8 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-3.5 rounded-2xl text-white font-black text-sm tracking-tight transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
-                  background  : 'linear-gradient(135deg, #0A2342 0%, #0891B2 100%)',
-                  boxShadow   : '0 4px 20px rgba(8,145,178,0.35)',
+                  background: 'linear-gradient(135deg, #0A2342 0%, #0891B2 100%)',
+                  boxShadow : '0 4px 20px rgba(8,145,178,0.35)',
                 }}
               >
                 {loading ? (
@@ -228,7 +237,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+            <div className="mt-5 text-center">
               <p className="text-sm text-gray-400">
                 Akun bermasalah?{' '}
                 <a
@@ -243,14 +252,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Demo button */}
-          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400 mb-3">Ingin lihat platform dulu tanpa akun?</p>
-            <DemoButton />
-          </div>
-
-          {/* Register link */}
-          <div className="mt-3 text-center">
+          {/* BLOK C — Register link */}
+          <div className="mt-4 text-center">
             <p className="text-xs text-gray-400">
               Ingin pakai untuk klinik Anda?{' '}
               <a href="/register" className="font-bold text-[#0891B2] hover:underline">
@@ -262,6 +265,7 @@ export default function LoginPage() {
           <p className="text-center text-xs text-gray-400 mt-4">
             © {new Date().getFullYear()} Japan Arena Corp · Clinic Platform
           </p>
+
         </div>
       </div>
 
