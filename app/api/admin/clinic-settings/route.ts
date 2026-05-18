@@ -13,7 +13,7 @@ export async function GET() {
   if (!profile?.clinic_id) return NextResponse.json({ clinic: null, doctors: [] })
 
   const [{ data: clinic }, { data: doctors }] = await Promise.all([
-    db.from('clinics').select('name, address, phone, email').eq('id', profile.clinic_id).single(),
+    db.from('clinics').select('name, address, phone, email, fonnte_token').eq('id', profile.clinic_id).single(),
     db.from('doctors').select('id, full_name, specialty, consultation_fee, is_active').eq('clinic_id', profile.clinic_id).order('full_name'),
   ])
 
@@ -33,7 +33,13 @@ export async function POST(request: Request) {
   const clinicId = profile.clinic_id
 
   // Update clinic info
-  await db.from('clinics').update({ name: clinic.name, address: clinic.address, phone: clinic.phone, email: clinic.email }).eq('id', clinicId)
+  await db.from('clinics').update({
+    name: clinic.name,
+    address: clinic.address,
+    phone: clinic.phone,
+    email: clinic.email,
+    ...(clinic.fonnte_token !== undefined ? { fonnte_token: clinic.fonnte_token } : {}),
+  }).eq('id', clinicId)
 
   // Upsert doctors
   for (const doc of doctors) {
