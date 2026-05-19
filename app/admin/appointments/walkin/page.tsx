@@ -16,7 +16,7 @@ export default function WalkInPage() {
   const [success, setSuccess]   = useState(false)
   const [form, setForm]         = useState({
     full_name: '', phone: '', gender: '', date_of_birth: '',
-    doctor_id: '', complaint: '', time: '',
+    doctor_id: '', complaint: '', time: '', email: '',
   })
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function WalkInPage() {
     })
     if (res.ok) {
       setSuccess(true)
-      setForm({ full_name:'', phone:'', gender:'', date_of_birth:'', doctor_id:'', complaint:'', time:'' })
+      setForm({ full_name:'', phone:'', gender:'', date_of_birth:'', doctor_id:'', complaint:'', time:'', email:'' })
     }
     setLoading(false)
   }
@@ -73,6 +73,11 @@ export default function WalkInPage() {
               <div>
                 <label className={LABEL_CLS}>No. HP</label>
                 <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="08xxxxxxxxxx" className={INPUT_CLS} />
+              </div>
+              <div>
+                <label className={LABEL_CLS}>Email (untuk notifikasi)</label>
+                <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="pasien@email.com (opsional)" className={INPUT_CLS} />
+                <p className="text-xs text-gray-400 mt-1">Opsional — untuk mengirim konfirmasi appointment via email</p>
               </div>
               <div>
                 <label className={LABEL_CLS}>Jenis Kelamin</label>

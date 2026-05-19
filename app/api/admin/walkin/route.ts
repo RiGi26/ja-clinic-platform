@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getClinicPlanStatus } from '@/lib/plan-guard'
+import { sendEmail } from '@/lib/email'
+import React from 'react'
+import AppointmentConfirmed from '@/emails/AppointmentConfirmed'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +24,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time } = await request.json()
+  const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time, email } = await request.json()
   const clinicId = profile.clinic_id
 
   // Generate No. RM
@@ -56,6 +59,33 @@ export async function POST(request: Request) {
     status: 'menunggu', type: 'walkin',
     queue_number: (queueCount ?? 0) + 1,
   })
+
+  if (email) {
+    const queueNumber = (queueCount ?? 0) + 1
+    Promise.all([
+      db.from('doctors').select('full_name').eq('id', doctor_id).single(),
+      db.from('clinics').select('name, address').eq('id', clinicId).single(),
+    ]).then(([{ data: doctor }, { data: clinic }]) => {
+      if (!doctor || !clinic) return
+      const scheduledAt = new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }).format(scheduled)
+      return sendEmail({
+        to: email,
+        subject: `Konfirmasi Antrian — ${clinic.name}`,
+        react: React.createElement(AppointmentConfirmed, {
+          patientName: full_name,
+          clinicName: clinic.name,
+          doctorName: doctor.full_name,
+          scheduledAt,
+          queueNumber,
+          clinicAddress: clinic.address ?? null,
+          loginUrl: `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`,
+        }),
+      })
+    }).catch(console.error)
+  }
 
   return NextResponse.json({ success: true, no_rm, queue: (queueCount ?? 0) + 1 })
 }
