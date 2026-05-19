@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getClinicPlanStatus } from '@/lib/plan-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,14 @@ type BillingItem = { name: string; qty: number; price: number; subtotal: number 
 export async function POST(request: Request) {
   const clinicId = await getClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { isExpired } = await getClinicPlanStatus(clinicId)
+  if (isExpired) {
+    return NextResponse.json(
+      { error: 'Masa aktif klinik telah berakhir. Hubungi tim kami.' },
+      { status: 403 }
+    )
+  }
 
   const body = await request.json() as {
     patient_id: string

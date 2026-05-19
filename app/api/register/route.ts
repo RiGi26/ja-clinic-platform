@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { sendEmail } from '@/lib/email'
+import React from 'react'
+import WelcomePatient from '@/emails/WelcomePatient'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,7 +52,7 @@ export async function POST(request: Request) {
       plan_expires_at: planExpiresAt,
       is_active:       true,
     })
-    .select('id')
+    .select('id, name')
     .single()
 
   if (clinicErr || !clinic) {
@@ -98,6 +101,17 @@ export async function POST(request: Request) {
   if (signInErr) {
     return NextResponse.json({ error: 'Akun berhasil dibuat tapi gagal login otomatis. Silakan login manual.' }, { status: 500 })
   }
+
+  sendEmail({
+    to: email.trim(),
+    subject: `Selamat! Klinik ${clinic.name} telah terdaftar`,
+    react: React.createElement(WelcomePatient, {
+      patientName: adminName.trim(),
+      clinicName: clinic.name,
+      noRM: '-',
+      loginUrl: `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`,
+    }),
+  }).catch(console.error)
 
   return NextResponse.json({ success: true, redirectTo: '/admin' })
 }

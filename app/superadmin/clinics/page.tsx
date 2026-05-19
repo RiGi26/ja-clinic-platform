@@ -10,13 +10,15 @@ type Clinic = {
   id: string; name: string; slug: string; phone: string | null
   plan: string; plan_expires_at: string | null; is_active: boolean
   created_at: string; patient_count: number; custom_domain?: string | null
+  suspended_at?: string | null; suspended_reason?: string | null
 }
 
 const PLAN_BADGE: Record<string, string> = {
-  trial:  'bg-amber-100 text-amber-700',
-  basic:  'bg-blue-100 text-blue-700',
-  pro:    'bg-green-100 text-green-700',
-  custom: 'bg-violet-100 text-violet-700',
+  trial:     'bg-amber-100 text-amber-700',
+  basic:     'bg-blue-100 text-blue-700',
+  pro:       'bg-green-100 text-green-700',
+  custom:    'bg-violet-100 text-violet-700',
+  suspended: 'bg-red-100 text-red-700',
 }
 
 function fmtDate(iso: string | null) {
@@ -29,6 +31,108 @@ function isExpired(iso: string | null) {
 }
 
 type CreateForm = { name: string; slug: string; admin_email: string; admin_password: string; admin_name: string; plan: string }
+
+function SuspendModal({ clinic, onClose, onSuccess }: { clinic: Clinic; onClose: () => void; onSuccess: () => void }) {
+  const [reason, setReason] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function handleSuspend() {
+    if (!reason.trim()) { setErr('Alasan suspend wajib diisi'); return }
+    setLoading(true); setErr('')
+    const res = await fetch(`/api/superadmin/clinics/${clinic.id}/suspend`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: reason.trim() }),
+    })
+    const data = await res.json() as { error?: string }
+    if (res.ok) { onSuccess(); onClose() } else { setErr(data.error ?? 'Gagal'); setLoading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-black text-gray-900 text-lg">Suspend Klinik</h3>
+          <button onClick={onClose}><X size={16} className="text-gray-500" /></button>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Klinik: <strong>{clinic.name}</strong></p>
+        <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+          <p className="text-xs font-bold text-red-700">⚠️ Admin klinik tidak bisa login setelah disuspend.</p>
+        </div>
+        <div className="mb-4">
+          <label className={LABEL}>Alasan Suspend</label>
+          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} placeholder="Masukkan alasan..."
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none transition-all" />
+        </div>
+        {err && <p className="text-sm text-red-600 mb-3 font-medium">{err}</p>}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">Batal</button>
+          <button onClick={handleSuspend} disabled={loading}
+            className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors disabled:opacity-50">
+            {loading ? 'Memproses...' : 'Suspend'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ActivateModal({ clinic, onClose, onSuccess }: { clinic: Clinic; onClose: () => void; onSuccess: () => void }) {
+  const [plan, setPlan] = useState('trial')
+  const [expiresAt, setExpiresAt] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function handleActivate() {
+    if (plan === 'trial' && !expiresAt) { setErr('Tanggal berakhir wajib diisi untuk plan trial'); return }
+    setLoading(true); setErr('')
+    const res = await fetch(`/api/superadmin/clinics/${clinic.id}/activate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, expires_at: expiresAt || undefined }),
+    })
+    const data = await res.json() as { error?: string }
+    if (res.ok) { onSuccess(); onClose() } else { setErr(data.error ?? 'Gagal'); setLoading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-black text-gray-900 text-lg">Aktifkan Klinik</h3>
+          <button onClick={onClose}><X size={16} className="text-gray-500" /></button>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Klinik: <strong>{clinic.name}</strong></p>
+        <div className="mb-4">
+          <label className={LABEL}>Pilih Plan</label>
+          <div className="grid grid-cols-2 gap-2">
+            {['trial', 'basic', 'pro', 'custom'].map(p => (
+              <button key={p} onClick={() => setPlan(p)}
+                className={`py-2 rounded-xl text-sm font-bold border-2 transition-colors capitalize ${plan === p ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+        {plan === 'trial' && (
+          <div className="mb-4">
+            <label className={LABEL}>Berakhir Pada</label>
+            <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className={INPUT} />
+          </div>
+        )}
+        {err && <p className="text-sm text-red-600 mb-3 font-medium">{err}</p>}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">Batal</button>
+          <button onClick={handleActivate} disabled={loading}
+            className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50">
+            {loading ? 'Memproses...' : 'Aktifkan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ClinicsPage() {
   const [clinics,  setClinics]  = useState<Clinic[]>([])
@@ -46,13 +150,15 @@ export default function ClinicsPage() {
   const [impersonating, setImpersonating]         = useState<string | null>(null)
   const [confirmDeactivate, setConfirmDeactivate] = useState<Clinic | null>(null)
 
-  // Custom domain state
   const [domainModal, setDomainModal]     = useState<Clinic | null>(null)
   const [domainInput, setDomainInput]     = useState('')
   const [domainErr,   setDomainErr]       = useState('')
   const [domainSaving, setDomainSaving]   = useState(false)
   const [domainSuccess, setDomainSuccess] = useState('')
   const [confirmRemoveDomain, setConfirmRemoveDomain] = useState<Clinic | null>(null)
+
+  const [suspendModal,  setSuspendModal]  = useState<Clinic | null>(null)
+  const [activateModal, setActivateModal] = useState<Clinic | null>(null)
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
@@ -80,8 +186,7 @@ export default function ClinicsPage() {
     const domain = domainInput.trim().toLowerCase()
     if (!domain) { setDomainErr('Domain tidak boleh kosong'); return }
     if (domain.includes('://') || domain.includes('/')) {
-      setDomainErr('Jangan sertakan http:// atau path. Contoh: kliniksehat.com')
-      return
+      setDomainErr('Jangan sertakan http:// atau path. Contoh: kliniksehat.com'); return
     }
     setDomainSaving(true); setDomainErr('')
     const res  = await fetch(`/api/superadmin/clinics/${domainModal.id}/custom-domain`, {
@@ -185,7 +290,7 @@ export default function ClinicsPage() {
         <select value={planF} onChange={e => setPlanF(e.target.value)}
           className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">Semua Plan</option>
-          {['trial','basic','pro','custom'].map(p => <option key={p} value={p}>{p}</option>)}
+          {['trial','basic','pro','custom','suspended'].map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select value={statusF} onChange={e => setStatusF(e.target.value)}
           className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -204,16 +309,16 @@ export default function ClinicsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['Nama Klinik', 'Slug', 'Telepon', 'Plan', 'Trial Habis', 'Pasien', 'Custom Domain', 'Status', 'Aksi'].map(h => (
+                {['Nama Klinik', 'Slug', 'Telepon', 'Plan', 'Trial Habis', 'Pasien', 'Custom Domain', 'Suspended', 'Status', 'Aksi'].map(h => (
                   <th key={h} className="text-left text-[10px] uppercase tracking-widest font-bold text-gray-400 px-4 py-3 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={8} className="py-12 text-center text-sm text-gray-400">Memuat...</td></tr>
+                <tr><td colSpan={10} className="py-12 text-center text-sm text-gray-400">Memuat...</td></tr>
               ) : clinics.length === 0 ? (
-                <tr><td colSpan={8} className="py-12 text-center text-sm text-gray-400">Tidak ada klinik</td></tr>
+                <tr><td colSpan={10} className="py-12 text-center text-sm text-gray-400">Tidak ada klinik</td></tr>
               ) : clinics.map(c => (
                 <tr key={c.id} className={`hover:bg-gray-50 transition-colors ${!c.is_active ? 'opacity-60' : ''}`}>
                   <td className="px-4 py-3 font-bold text-gray-800">{c.name}</td>
@@ -223,7 +328,7 @@ export default function ClinicsPage() {
                     <select defaultValue={c.plan}
                       onChange={e => changePlan(c.id, e.target.value)}
                       className={`px-2 py-1 rounded-full text-xs font-bold border-0 cursor-pointer ${PLAN_BADGE[c.plan] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {['trial','basic','pro','custom'].map(p => <option key={p} value={p}>{p}</option>)}
+                      {['trial','basic','pro','custom','suspended'].map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </td>
                   <td className={`px-4 py-3 text-xs ${isExpired(c.plan_expires_at) ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
@@ -249,6 +354,16 @@ export default function ClinicsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
+                    {c.suspended_at ? (
+                      <div className="max-w-[140px]">
+                        <p className="text-[10px] text-red-600 font-bold">{fmtDate(c.suspended_at)}</p>
+                        {c.suspended_reason && (
+                          <p className="text-[10px] text-gray-400 truncate" title={c.suspended_reason}>{c.suspended_reason}</p>
+                        )}
+                      </div>
+                    ) : <span className="text-[10px] text-gray-300">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                       {c.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
@@ -267,10 +382,23 @@ export default function ClinicsPage() {
                         className="px-2 py-1 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1 disabled:opacity-50 whitespace-nowrap">
                         <ExternalLink size={10} /> Masuk
                       </button>
-                      <button onClick={() => c.is_active ? setConfirmDeactivate(c) : toggleActive(c)}
-                        className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap ${c.is_active ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}>
-                        {c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                      </button>
+                      {c.plan !== 'suspended' && (
+                        <button onClick={() => setSuspendModal(c)}
+                          className="px-2 py-1 text-[10px] font-bold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors whitespace-nowrap">
+                          Suspend
+                        </button>
+                      )}
+                      {(c.plan === 'suspended' || !c.is_active) ? (
+                        <button onClick={() => setActivateModal(c)}
+                          className="px-2 py-1 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors whitespace-nowrap">
+                          Aktifkan
+                        </button>
+                      ) : (
+                        <button onClick={() => setConfirmDeactivate(c)}
+                          className="px-2 py-1 text-[10px] font-bold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap">
+                          Nonaktifkan
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -290,10 +418,10 @@ export default function ClinicsPage() {
             </div>
             <div className="space-y-3">
               {([
-                { label: 'Nama Klinik', key: 'name', ph: 'Klinik Sehat' },
-                { label: 'Slug',        key: 'slug', ph: 'klinik-sehat' },
-                { label: 'Nama Admin',  key: 'admin_name', ph: 'Dr. Admin' },
-                { label: 'Email Admin', key: 'admin_email', ph: 'admin@klinik.com' },
+                { label: 'Nama Klinik',    key: 'name',           ph: 'Klinik Sehat' },
+                { label: 'Slug',           key: 'slug',           ph: 'klinik-sehat' },
+                { label: 'Nama Admin',     key: 'admin_name',     ph: 'Dr. Admin' },
+                { label: 'Email Admin',    key: 'admin_email',    ph: 'admin@klinik.com' },
                 { label: 'Password Admin', key: 'admin_password', ph: '••••••••' },
               ] as { label: string; key: keyof CreateForm; ph: string }[]).map(f => (
                 <div key={f.key}>
@@ -328,9 +456,7 @@ export default function ClinicsPage() {
               <h3 className="font-black text-gray-900 text-lg">Custom Domain</h3>
               <button onClick={() => setDomainModal(null)}><X size={16} className="text-gray-500" /></button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Klinik: <strong>{domainModal.name}</strong>
-            </p>
+            <p className="text-sm text-gray-500 mb-4">Klinik: <strong>{domainModal.name}</strong></p>
             {domainSuccess ? (
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
                 <p className="text-sm font-bold text-emerald-700 mb-1">✅ Domain berhasil disimpan</p>
@@ -396,6 +522,22 @@ export default function ClinicsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {suspendModal && (
+        <SuspendModal
+          clinic={suspendModal}
+          onClose={() => setSuspendModal(null)}
+          onSuccess={() => { showToast('Klinik berhasil disuspend'); load() }}
+        />
+      )}
+
+      {activateModal && (
+        <ActivateModal
+          clinic={activateModal}
+          onClose={() => setActivateModal(null)}
+          onSuccess={() => { showToast('Klinik berhasil diaktifkan'); load() }}
+        />
       )}
     </div>
   )

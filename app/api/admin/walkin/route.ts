@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getClinicPlanStatus } from '@/lib/plan-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,14 @@ export async function POST(request: Request) {
   const db = createAdminClient()
   const { data: profile } = await db.from('users').select('clinic_id').eq('id', user.id).single()
   if (!profile?.clinic_id) return NextResponse.json({ error: 'Clinic not found' }, { status: 400 })
+
+  const { isExpired } = await getClinicPlanStatus(profile.clinic_id)
+  if (isExpired) {
+    return NextResponse.json(
+      { error: 'Masa aktif klinik telah berakhir. Hubungi tim kami.' },
+      { status: 403 }
+    )
+  }
 
   const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time } = await request.json()
   const clinicId = profile.clinic_id
