@@ -20,6 +20,7 @@ type Data = {
   walkin: number; booking: number; revenue: number; revenuePending: number
   byPayment: Record<string, number>
   byDoctor: { doctor_id: string; full_name: string; specialty: string; total: number; selesai: number; menunggu: number }[]
+  byPenjamin?: Record<string, number>
 }
 
 export default function LaporanPage() {
@@ -188,6 +189,33 @@ export default function LaporanPage() {
                 )}
               </div>
             </div>
+
+            {/* Rekap Penjamin */}
+            {data.byPenjamin && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-7">
+                <p className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground mb-5">Rekap Penjamin</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { key: 'umum',     label: '💵 Umum',     color: 'bg-gray-100 text-gray-600' },
+                    { key: 'bpjs',     label: '🏥 BPJS',     color: 'bg-cyan-100 text-cyan-700' },
+                    { key: 'asuransi', label: '📋 Asuransi', color: 'bg-violet-100 text-violet-700' },
+                  ].map(p => {
+                    const count = data.byPenjamin?.[p.key] ?? 0
+                    const pct   = data.totalPasien > 0 ? (count / data.totalPasien) * 100 : 0
+                    return (
+                      <div key={p.key} className={`rounded-xl p-4 ${p.color}`}>
+                        <p className="text-sm font-bold mb-1">{p.label}</p>
+                        <p className="text-3xl font-black">{count}</p>
+                        <div className="h-1.5 bg-white/40 rounded-full mt-2 overflow-hidden">
+                          <div className="h-full bg-current rounded-full opacity-60 transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="text-xs font-bold mt-1 opacity-70">{Math.round(pct)}%</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Per Dokter */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

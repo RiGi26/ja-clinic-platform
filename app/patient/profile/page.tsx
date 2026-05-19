@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import TopBar from '@/components/TopBar'
-import { Loader2, CheckCircle, User, Phone, Calendar, Droplets } from 'lucide-react'
+import { Loader2, CheckCircle, User, Phone, Calendar, Droplets, Shield } from 'lucide-react'
 
 const INPUT_CLS = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
 const LABEL_CLS = 'text-[10px] uppercase tracking-widest font-bold text-muted-foreground block mb-2'
@@ -176,6 +176,36 @@ export default function PatientProfilePage() {
                 <input type="number" value={profile.weight ?? ''}
                   onChange={e => setProfile((p:any) => ({ ...p, weight: parseFloat(e.target.value) || null }))}
                   className={INPUT_CLS} placeholder="65" />
+              </div>
+            </div>
+          </div>
+
+          {/* Info Penjamin */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 bg-cyan-50 rounded-xl flex items-center justify-center">
+                <Shield size={16} className="text-cyan-600" />
+              </div>
+              <h3 className="font-black text-secondary">Info Penjamin</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL_CLS}>Jenis Penjamin</label>
+                <select value={profile.jenis_penjamin ?? 'umum'}
+                  onChange={e => setProfile((p: any) => ({ ...p, jenis_penjamin: e.target.value }))}
+                  className={INPUT_CLS}>
+                  <option value="umum">Umum / Mandiri</option>
+                  <option value="bpjs">BPJS Kesehatan</option>
+                  <option value="asuransi">Asuransi Swasta</option>
+                </select>
+              </div>
+              <div>
+                <label className={LABEL_CLS}>No. Kartu BPJS</label>
+                <input type="text" value={profile.no_bpjs ?? ''}
+                  onChange={e => setProfile((p: any) => ({ ...p, no_bpjs: e.target.value }))}
+                  disabled={profile.jenis_penjamin !== 'bpjs'}
+                  placeholder="89xxxxxxxxxxxxxx"
+                  className={`${INPUT_CLS} disabled:bg-gray-50 disabled:cursor-not-allowed`} />
               </div>
             </div>
           </div>

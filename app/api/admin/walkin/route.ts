@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time, email } = await request.json()
+  const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time, email, jenis_kunjungan, no_bpjs } = await request.json()
   const clinicId = profile.clinic_id
 
   // Generate No. RM
@@ -40,6 +40,13 @@ export async function POST(request: Request) {
   }).select('id').single()
 
   if (patErr || !patient) return NextResponse.json({ error: patErr?.message }, { status: 500 })
+
+  if (no_bpjs) {
+    await db.from('patients').update({
+      no_bpjs,
+      jenis_penjamin: jenis_kunjungan ?? 'umum',
+    }).eq('id', patient.id)
+  }
 
   // Buat appointment walk-in
   const today     = new Date()
@@ -58,6 +65,7 @@ export async function POST(request: Request) {
     complaint: complaint || null,
     status: 'menunggu', type: 'walkin',
     queue_number: (queueCount ?? 0) + 1,
+    jenis_kunjungan: jenis_kunjungan ?? 'umum',
   })
 
   if (email) {

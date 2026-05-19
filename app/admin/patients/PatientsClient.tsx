@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import TopBar from '@/components/TopBar'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, ChevronRight } from 'lucide-react'
 
-const FILTERS = ['Semua', 'Aktif', 'Baru', 'Alumni']
+const FILTERS = ['Semua', 'Aktif', 'Baru', 'Alumni', 'BPJS', 'Asuransi']
 const AVATAR_COLORS = [
   'from-cyan-400 to-blue-500','from-violet-400 to-purple-600',
   'from-emerald-400 to-teal-600','from-orange-400 to-red-500',
@@ -20,6 +21,7 @@ const STATUS_STYLE: Record<string, string> = {
 export type Patient = {
   id:string; no_rm:string; full_name:string; phone:string|null
   gender:string|null; date_of_birth:string|null; status?:string
+  jenis_penjamin?: string | null
 }
 
 export default function PatientsClient({ patients }: { patients: Patient[] }) {
@@ -27,9 +29,11 @@ export default function PatientsClient({ patients }: { patients: Patient[] }) {
   const [search, setSearch] = useState('')
 
   const filtered = patients.filter(p => {
-    const matchFilter = filter === 'Semua' || (p.status ?? 'Aktif') === filter
+    const statusFilter = filter === 'BPJS' ? p.jenis_penjamin === 'bpjs'
+      : filter === 'Asuransi' ? p.jenis_penjamin === 'asuransi'
+      : filter === 'Semua' || (p.status ?? 'Aktif') === filter
     const q = search.toLowerCase()
-    return matchFilter && (!q || p.full_name.toLowerCase().includes(q) || p.no_rm.toLowerCase().includes(q))
+    return statusFilter && (!q || p.full_name.toLowerCase().includes(q) || p.no_rm.toLowerCase().includes(q))
   })
 
   function calcAge(dob: string | null) {
@@ -79,15 +83,24 @@ export default function PatientsClient({ patients }: { patients: Patient[] }) {
                     <div className="col-span-2">
                       <p className="font-black text-secondary text-sm">{p.full_name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{p.no_rm} · {calcAge(p.date_of_birth)} · {p.gender ?? '—'}</p>
+                      {p.jenis_penjamin && p.jenis_penjamin !== 'umum' && (
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${p.jenis_penjamin === 'bpjs' ? 'bg-cyan-100 text-cyan-700' : 'bg-violet-100 text-violet-700'}`}>
+                          {p.jenis_penjamin.toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">No. HP</p>
                       <p className="text-sm font-bold text-secondary">{p.phone ?? '—'}</p>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end items-center gap-3">
                       <span className={`px-3 py-1.5 rounded-full font-bold text-xs ${STATUS_STYLE[p.status ?? 'Aktif']}`}>
                         {p.status ?? 'Aktif'}
                       </span>
+                      <Link href={`/admin/patients/${p.id}`}
+                        className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover transition-colors whitespace-nowrap">
+                        Lihat Detail <ChevronRight size={12} />
+                      </Link>
                     </div>
                   </div>
                 </div>

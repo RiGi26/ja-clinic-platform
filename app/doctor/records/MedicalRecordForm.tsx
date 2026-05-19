@@ -46,6 +46,84 @@ function avatarGrad(name: string) {
 
 const DRAFT_KEY = (id: string) => `soap_draft_${id}`
 
+function LetterQuickSection({ patientId, appointmentId, diagnosis }: {
+  patientId: string; appointmentId: string; diagnosis: string
+}) {
+  const [open, setOpen]         = useState(false)
+  const [type, setType]         = useState<'sakit' | 'sehat' | 'rujukan' | ''>('')
+  const [form, setForm]         = useState({ sick_days: '', sick_from: '', purpose: '', referred_to: '', referral_reason: '' })
+  const [submitting, setSubmit] = useState(false)
+
+  async function generate() {
+    if (!type) return
+    setSubmit(true)
+    const body = {
+      patient_id: patientId, appointment_id: appointmentId, type, diagnosis: diagnosis || undefined,
+      sick_days: form.sick_days ? parseInt(form.sick_days) : undefined,
+      sick_from: form.sick_from || undefined,
+      sick_until: form.sick_from && form.sick_days
+        ? (() => { const d = new Date(form.sick_from); d.setDate(d.getDate() + parseInt(form.sick_days) - 1); return d.toISOString().split('T')[0] })()
+        : undefined,
+      purpose: form.purpose || undefined,
+      referred_to: form.referred_to || undefined,
+      referral_reason: form.referral_reason || undefined,
+    }
+    const res  = await fetch('/api/doctor/medical-letters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const data = await res.json() as { data?: { id: string } }
+    if (data.data?.id) {
+      window.open(`/api/admin/medical-letters/${data.data.id}/pdf`, '_blank')
+      setOpen(false)
+    }
+    setSubmit(false)
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 mb-8">
+      <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-3">Surat Keterangan</p>
+      {!open ? (
+        <div className="flex gap-2">
+          {([
+            { type: 'sakit',   label: '📋 Surat Sakit' },
+            { type: 'sehat',   label: '✅ Surat Sehat' },
+            { type: 'rujukan', label: '🏥 Surat Rujukan' },
+          ] as const).map(opt => (
+            <button key={opt.type} type="button" onClick={() => { setType(opt.type); setOpen(true) }}
+              className="flex-1 py-2 text-xs font-bold border-2 border-gray-200 text-gray-600 rounded-xl hover:border-primary hover:text-primary transition-all">
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-secondary capitalize">{type === 'sakit' ? '📋 Surat Sakit' : type === 'sehat' ? '✅ Surat Sehat' : '🏥 Surat Rujukan'}</span>
+            <button type="button" onClick={() => setOpen(false)}><X size={14} className="text-gray-400" /></button>
+          </div>
+          {type === 'sakit' && (
+            <div className="grid grid-cols-2 gap-2">
+              <input type="number" min={1} value={form.sick_days} onChange={e => setForm(f=>({...f, sick_days:e.target.value}))} placeholder="Jumlah hari" className={INPUT} />
+              <input type="date" value={form.sick_from} onChange={e => setForm(f=>({...f, sick_from:e.target.value}))} className={INPUT} />
+            </div>
+          )}
+          {type === 'sehat' && (
+            <input value={form.purpose} onChange={e => setForm(f=>({...f, purpose:e.target.value}))} placeholder="Keperluan (bekerja, sekolah...)" className={INPUT} />
+          )}
+          {type === 'rujukan' && (
+            <div className="space-y-2">
+              <input value={form.referred_to} onChange={e => setForm(f=>({...f, referred_to:e.target.value}))} placeholder="Dirujuk ke (nama RS/klinik)" className={INPUT} />
+              <input value={form.referral_reason} onChange={e => setForm(f=>({...f, referral_reason:e.target.value}))} placeholder="Alasan rujukan" className={INPUT} />
+            </div>
+          )}
+          <button type="button" onClick={generate} disabled={submitting}
+            className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-hover transition-colors disabled:opacity-50">
+            {submitting ? 'Membuat...' : 'Generate PDF'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MedicalRecordForm({ appointment, patient, history }: {
   appointment: { id: string; complaint: string | null }
   patient: Patient
@@ -407,7 +485,7 @@ export default function MedicalRecordForm({ appointment, patient, history }: {
               </button>
             </div>
 
-            <div className="flex gap-3 pb-8">
+            <div className="flex gap-3 pb-4">
               <button onClick={saveDraft}
                 className="flex-1 py-3.5 bg-white border border-gray-200 text-secondary rounded-xl hover:bg-gray-50 transition-colors font-bold text-sm">
                 Simpan Draft
@@ -421,6 +499,13 @@ export default function MedicalRecordForm({ appointment, patient, history }: {
                 {pending ? 'Menyimpan...' : 'Simpan & Selesai'}
               </button>
             </div>
+
+            {/* Surat Keterangan Shortcut */}
+            <LetterQuickSection
+              patientId={patient.id}
+              appointmentId={appointment.id}
+              diagnosis={soapAssessment}
+            />
           </div>
 
           {/* Patient sidebar */}

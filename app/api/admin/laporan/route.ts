@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     { data: doctors },
   ] = await Promise.all([
     db.from('appointments')
-      .select('status, type, doctor_id, doctors(full_name, specialty)')
+      .select('status, type, doctor_id, jenis_kunjungan, doctors(full_name, specialty)')
       .eq('clinic_id', clinicId)
       .gte('scheduled_at', start)
       .lt('scheduled_at', end),
@@ -84,6 +84,12 @@ export async function GET(request: Request) {
     }
   })
 
+  const byPenjamin = aptList.reduce((acc: Record<string, number>, a) => {
+    const k = a.jenis_kunjungan ?? 'umum'
+    acc[k] = (acc[k] ?? 0) + 1
+    return acc
+  }, {})
+
   return NextResponse.json({
     mode,
     period_start : start,
@@ -98,5 +104,6 @@ export async function GET(request: Request) {
     revenuePending,
     byPayment,
     byDoctor,
+    byPenjamin,
   })
 }

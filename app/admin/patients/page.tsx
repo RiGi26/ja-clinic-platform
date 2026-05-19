@@ -12,7 +12,7 @@ export default async function PatientsPage() {
   const db = createAdminClient()
   const { data: patients } = await db
     .from('patients')
-    .select('id, no_rm, full_name, phone, gender, date_of_birth')
+    .select('id, no_rm, full_name, phone, gender, date_of_birth, jenis_penjamin')
     .eq('clinic_id', user.clinic_id)
     .order('created_at', { ascending: false })
 

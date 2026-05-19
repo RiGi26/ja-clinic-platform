@@ -17,6 +17,7 @@ export default function WalkInPage() {
   const [form, setForm]         = useState({
     full_name: '', phone: '', gender: '', date_of_birth: '',
     doctor_id: '', complaint: '', time: '', email: '',
+    jenis_kunjungan: 'umum', no_bpjs: '',
   })
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function WalkInPage() {
     })
     if (res.ok) {
       setSuccess(true)
-      setForm({ full_name:'', phone:'', gender:'', date_of_birth:'', doctor_id:'', complaint:'', time:'', email:'' })
+      setForm({ full_name:'', phone:'', gender:'', date_of_birth:'', doctor_id:'', complaint:'', time:'', email:'', jenis_kunjungan:'umum', no_bpjs:'' })
     }
     setLoading(false)
   }
@@ -94,6 +95,29 @@ export default function WalkInPage() {
               <div>
                 <label className={LABEL_CLS}>Jam Kunjungan *</label>
                 <input required type="time" value={form.time} onChange={e => set('time', e.target.value)} className={INPUT_CLS} />
+              </div>
+              <div className="col-span-2">
+                <label className={LABEL_CLS}>Jenis Kunjungan</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'umum',    label: '💵 Umum' },
+                    { value: 'bpjs',    label: '🏥 BPJS' },
+                    { value: 'asuransi', label: '📋 Asuransi' },
+                  ].map(j => (
+                    <button key={j.value} type="button" onClick={() => set('jenis_kunjungan', j.value)}
+                      className={`flex-1 py-2.5 rounded-xl font-bold text-sm border-2 transition-all ${
+                        form.jenis_kunjungan === j.value
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-gray-200 text-gray-600 hover:border-primary/50'
+                      }`}>
+                      {j.label}
+                    </button>
+                  ))}
+                </div>
+                {form.jenis_kunjungan === 'bpjs' && (
+                  <input value={form.no_bpjs} onChange={e => set('no_bpjs', e.target.value)}
+                    placeholder="No. kartu BPJS" className={`${INPUT_CLS} mt-2`} />
+                )}
               </div>
               <div className="col-span-2">
                 <label className={LABEL_CLS}>Pilih Dokter *</label>
