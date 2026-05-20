@@ -34,6 +34,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/doctor',          Icon: LayoutDashboard, label: 'Dashboard'      },
     { href: '/doctor/queue',    Icon: Clock,           label: 'Antrian Pasien' },
     { href: '/doctor/records',  Icon: FileText,        label: 'Rekam Medis'    },
+    { href: '/doctor/patients', Icon: Users,           label: 'Pasien Saya'    },
     { href: '/doctor/schedule', Icon: Calendar,        label: 'Jadwal Saya'    },
   ],
   patient: [

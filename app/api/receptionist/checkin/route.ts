@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { sendAndLog } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
   const db = createAdminClient()
   const { data: apt } = await db
     .from('appointments')
-    .select('id, queue_number, doctor_id, status')
+    .select('id, queue_number, doctor_id, patient_id, complaint, status')
     .eq('id', appointment_id)
     .eq('clinic_id', clinicId)
     .single()
@@ -76,6 +77,62 @@ export async function POST(request: Request) {
     queueNumber = (count ?? 0) + 1
     await db.from('appointments').update({ queue_number: queueNumber }).eq('id', appointment_id)
   }
+
+  // WA notif ke dokter — non-blocking, tidak boleh block response
+  Promise.allSettled([
+    (async () => {
+      if (!apt.doctor_id) return
+
+      // Ambil user_id dokter dari table doctors
+      const { data: doctorRec } = await db
+        .from('doctors')
+        .select('user_id, full_name')
+        .eq('id', apt.doctor_id)
+        .single()
+
+      if (!doctorRec?.user_id) return
+
+      // Ambil no HP dokter dari table users
+      const { data: doctorUser } = await db
+        .from('users')
+        .select('phone')
+        .eq('id', doctorRec.user_id)
+        .single()
+
+      if (!doctorUser?.phone) return
+
+      // Ambil nama pasien
+      const { data: patient } = await db
+        .from('patients')
+        .select('full_name')
+        .eq('id', apt.patient_id)
+        .single()
+
+      // Ambil nama klinik + fonnte token
+      const { data: clinic } = await db
+        .from('clinics')
+        .select('name, fonnte_token')
+        .eq('id', clinicId)
+        .single()
+
+      if (!clinic?.fonnte_token) return
+
+      const msg =
+        `🏥 ${clinic.name}\n` +
+        `Pasien *${patient?.full_name ?? 'Pasien'}* sudah hadir.\n` +
+        `Nomor antrian: *${queueNumber}*\n` +
+        `Keluhan: ${apt.complaint ?? '-'}\n\n` +
+        `Silakan bersiap.`
+
+      await sendAndLog(db, clinicId, {
+        type     : 'general',
+        recipient: doctorRec.full_name ?? doctorUser.phone,
+        message  : msg,
+        phone    : doctorUser.phone,
+        token    : clinic.fonnte_token,
+      })
+    })(),
+  ]).catch(err => console.error('[checkin] WA doctor error:', err))
 
   return NextResponse.json({ success: true, queue_number: queueNumber })
 }

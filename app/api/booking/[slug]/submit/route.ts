@@ -114,6 +114,7 @@ export async function POST(
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     }).format(new Date(body.date + 'T00:00:00'))
 
+    // 1. WA ke pasien — konfirmasi booking
     const patMsg =
       `Halo ${patientName}, booking Anda di ${clinic.name} berhasil!\n\n` +
       `Kode Booking: *${bookingCode}*\n` +
@@ -128,6 +129,7 @@ export async function POST(
       message: patMsg, phone: body.no_hp, token: clinic.fonnte_token,
     }).catch(console.error)
 
+    // 2. WA ke admin klinik
     if (clinic.phone) {
       const adminMsg =
         `📅 *Booking Baru Masuk*\n\n` +
@@ -142,6 +144,43 @@ export async function POST(
         message: adminMsg, phone: clinic.phone, token: clinic.fonnte_token,
       }).catch(console.error)
     }
+
+    // 3. WA ke dokter — notif booking baru
+    Promise.allSettled([
+      (async () => {
+        const { data: doctorRec } = await db
+          .from('doctors')
+          .select('user_id')
+          .eq('id', body.doctor_id)
+          .single()
+        if (!doctorRec?.user_id) return
+
+        const { data: doctorUser } = await db
+          .from('users')
+          .select('phone')
+          .eq('id', doctorRec.user_id)
+          .single()
+        if (!doctorUser?.phone) return
+
+        const [dy, mo, yr2] = body.date.split('-')
+        const tglFmt = `${dy}/${mo}/${yr2}`
+        const doctorMsg =
+          `📅 ${clinic.name} — Booking Baru\n\n` +
+          `Pasien: ${patientName}\n` +
+          `Tanggal: ${tglFmt}\n` +
+          `Jam: ${body.time}\n` +
+          `Keluhan: ${body.keluhan}\n` +
+          `Kode Booking: ${bookingCode}`
+
+        await sendAndLog(db, clinicId, {
+          type     : 'appointment_confirmed',
+          recipient: doctorUser.phone,
+          message  : doctorMsg,
+          phone    : doctorUser.phone,
+          token    : clinic.fonnte_token,
+        })
+      })(),
+    ]).catch(err => console.error('[booking/submit] WA doctor error:', err))
   }
 
   return NextResponse.json({

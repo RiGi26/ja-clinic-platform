@@ -103,9 +103,13 @@ export default function ReceptionistBillingPage() {
         notes,
       }),
     })
-    const data = await res.json() as { success?: boolean; bill?: { id: string; invoice_number: string }; error?: string }
+    const data = await res.json() as { success?: boolean; bill?: { id: string; invoice_number: string }; wa_sent?: boolean; error?: string }
     if (res.ok && data.bill) {
-      showToast(`Invoice ${data.bill.invoice_number} berhasil dibuat`)
+      const hasPhone = !!(billingModal.patients as any)?.phone
+      const waMsg = data.wa_sent && hasPhone
+        ? ' · ✓ Invoice terkirim ke WA pasien'
+        : (!hasPhone ? ' · No HP pasien tidak tersedia' : '')
+      showToast(`Invoice ${data.bill.invoice_number} berhasil dibuat${waMsg}`)
       setBillingModal(null)
       load()
       window.open(`/api/admin/billing/${data.bill.id}/pdf`, '_blank')

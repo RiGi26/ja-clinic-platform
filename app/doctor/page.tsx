@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import TopBar from '@/components/TopBar'
 import { Users, CheckCircle, Clock } from 'lucide-react'
 import DoctorQueueList from './DoctorQueueList'
+import DoctorStats from './DoctorStats'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,6 +92,9 @@ export default async function DoctorDashboardPage() {
         </div>
         <DoctorQueueList initialQueue={queue} />
       </div>
+
+      {/* ─── Statistik Bulanan ───────────────────────────────── */}
+      <DoctorStats />
     </div>
   )
 }
