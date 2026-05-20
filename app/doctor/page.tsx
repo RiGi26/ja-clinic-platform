@@ -43,32 +43,52 @@ export default async function DoctorDashboardPage() {
   const menunggu = queue.filter(a => a.status === 'menunggu').length
 
   return (
-    <div className="min-h-screen bg-background">
-      <TopBar title="Dashboard Dokter"
-        subtitle={`${doctorRec?.full_name ?? user.full_name} — ${doctorRec?.specialty ?? 'Dokter'}`}
-        showSearch={false} />
-      <div className="p-8">
-        <div className="grid grid-cols-3 gap-5 mb-8">
-          {[
-            { label: 'Pasien Hari Ini', value: queue.length, Icon: Users,        color: 'text-blue-600',    bg: 'bg-blue-50'    },
-            { label: 'Selesai',         value: selesai,       Icon: CheckCircle,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Menunggu',        value: menunggu,      Icon: Clock,        color: 'text-amber-600',   bg: 'bg-amber-50'   },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                  <s.Icon size={24} className={s.color} />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-1">{s.label}</p>
-                  <p className="text-4xl font-black text-secondary tabular-nums">{s.value}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+    <div className="space-y-10 animate-fade-in">
+      {/* ─── Header Section ────────────────────────────────── */}
+      <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
+        <div>
+          <p className="text-[12px] text-gray-500 mb-1.5 font-bold uppercase tracking-widest flex items-center gap-2 sf-display">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            Doctor Active Session • {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+          </p>
+          <h2 className="text-[32px] md:text-[40px] sf-display-heavy tracking-tight text-[#1D1D1F] leading-tight">
+            Okaeri, Dr. {(doctorRec?.full_name ?? user.full_name).split(' ')[0]}.
+          </h2>
+          <p className="text-gray-500 text-sm mt-1 sf-display">{doctorRec?.specialty ?? 'General Practitioner'}</p>
         </div>
+        
+        <div className="flex gap-3">
+          <div className="bg-white/80 backdrop-blur-md border border-black/5 px-4 py-2 rounded-full flex items-center gap-2 shadow-sm">
+            <Clock size={16} className="text-apple-blue" />
+            <span className="text-xs font-bold text-gray-900 tabular-nums">Shift: 08:00 - 16:00</span>
+          </div>
+        </div>
+      </header>
 
-        <h2 className="text-xl font-black text-secondary mb-5">Antrian Pasien Hari Ini</h2>
+      {/* ─── Stats Row ──────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: 'Total Pasien', value: queue.length, Icon: Users,        color: 'bg-blue-50 text-apple-blue'    },
+          { label: 'Telah Selesai', value: selesai,       Icon: CheckCircle,  color: 'bg-[#F3FBF5] text-green-600' },
+          { label: 'Menunggu',        value: menunggu,      Icon: Clock,        color: 'bg-orange-50 text-orange-600'   },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-[32px] p-6 apple-shadow border border-black/[0.03] flex items-center gap-5 group hover:scale-[1.02] transition-all">
+            <div className={`w-14 h-14 rounded-2xl ${s.color} flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110`}>
+              <s.Icon size={24} />
+            </div>
+            <div>
+              <p className="text-gray-400 text-[11px] uppercase tracking-widest font-bold mb-0.5">{s.label}</p>
+              <p className="text-3xl sf-display-heavy text-[#1D1D1F] tabular-nums leading-none">{s.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+            <h3 className="text-[22px] sf-display-heavy tracking-tight text-[#1D1D1F]">Antrian Pasien Hari Ini</h3>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">Real-time Sync</span>
+        </div>
         <DoctorQueueList initialQueue={queue} />
       </div>
     </div>

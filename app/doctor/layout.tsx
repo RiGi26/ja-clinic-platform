@@ -1,7 +1,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ReactNode } from 'react'
-import ClinicSidebar from '@/components/ClinicSidebar'
+import ClinicClientLayout from '@/components/ClinicClientLayout'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,13 +32,14 @@ export default async function DoctorLayout({ children }: { children: ReactNode }
   const doctor = await getDoctor()
 
   return (
-    <div className="min-h-screen bg-[#F0F9FF]">
-      <ClinicSidebar role="doctor" userName={doctor.full_name} userSub={doctor.specialty} />
-      <div className="clinic-content min-h-screen flex flex-col">
-        <main className="flex-1 p-6 lg:p-8 max-w-[1400px] w-full animate-fade-in-up">
-          {children}
-        </main>
-      </div>
+    <div className="h-screen flex overflow-hidden bg-bg text-text">
+      <ClinicClientLayout 
+        role="doctor" 
+        userName={doctor.full_name} 
+        userSub={doctor.specialty}
+      >
+        {children}
+      </ClinicClientLayout>
     </div>
   )
 }

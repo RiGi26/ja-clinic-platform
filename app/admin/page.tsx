@@ -1,6 +1,6 @@
 import { getClinicUser } from '@/lib/clinic'
 import { createAdminClient } from '@/lib/supabase/server'
-import { Users, Calendar, DollarSign, Clock, TrendingUp, Star } from 'lucide-react'
+import { Users, Calendar, DollarSign, Clock, TrendingUp, Star, ArrowRight, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -77,93 +77,104 @@ export default async function AdminDashboardPage() {
   const pendapatan = (monthBilling ?? []).reduce((s, b) => s + (b.total ?? 0), 0)
 
   const stats = [
-    { label: 'Total Pasien',         value: (totalPatients ?? 0).toLocaleString('id-ID'), Icon: Users,      color: 'from-blue-500 to-blue-600' },
-    { label: 'Appointment Hari Ini', value: String(todayAppointments ?? 0),               Icon: Calendar,   color: 'from-violet-500 to-purple-600' },
-    { label: 'Pendapatan Bulan Ini', value: fmtRupiah(pendapatan),                        Icon: DollarSign, color: 'from-emerald-500 to-teal-600' },
-    { label: 'Antrian Sekarang',     value: String(waitingCount ?? 0),                    Icon: Clock,      color: 'from-amber-500 to-orange-500' },
+    { label: 'Total Pasien',         value: (totalPatients ?? 0).toLocaleString('id-ID'), Icon: Users,      color: 'bg-blue-50 text-apple-blue' },
+    { label: 'Appointments',         value: String(todayAppointments ?? 0),               Icon: Calendar,   color: 'bg-purple-50 text-purple-600' },
+    { label: 'Revenue (Month)',      value: fmtRupiah(pendapatan),                        Icon: DollarSign, color: 'bg-emerald-50 text-emerald-600' },
+    { label: 'Active Queue',         value: String(waitingCount ?? 0),                    Icon: Clock,      color: 'bg-orange-50 text-orange-600' },
   ]
 
   return (
-    <div className="space-y-7">
-
-      {/* Hero banner */}
-      <div
-        className="rounded-3xl p-8 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0A2342 0%, #0f2d5c 50%, #1B4F8A 100%)',
-                 boxShadow: '0 20px 60px rgba(10,35,66,0.3)' }}
-      >
-        <div className="absolute inset-0 opacity-[0.05]"
-          style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="relative z-10">
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">
-            {today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+    <div className="space-y-10 animate-fade-in">
+      
+      {/* ─── Header Section (Apple Style) ────────────────────────────────── */}
+      <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
+        <div>
+          <p className="text-[12px] text-gray-500 mb-1.5 font-bold uppercase tracking-widest flex items-center gap-2 sf-display">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            System Operational • {today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
           </p>
-          <h1 className="text-2xl font-black text-white mb-6">Dashboard Admin</h1>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map(s => (
-              <div key={s.label} className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-5">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg`}>
-                  <s.Icon size={18} className="text-white" />
-                </div>
-                <p className="text-white/50 text-[11px] uppercase tracking-widest font-bold mb-1">{s.label}</p>
-                <p className="text-white text-3xl font-black tabular-nums leading-none">{s.value}</p>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-[40px] sf-display-heavy tracking-tight text-[#1D1D1F] leading-tight">
+            Dashboard Admin.
+          </h2>
         </div>
+        
+        <div className="flex gap-3">
+          <Link href="/admin/appointments/walkin"
+            className="bg-[#1D1D1F] text-white px-6 py-3 rounded-full text-sm sf-display-heavy shadow-lg hover:bg-black transition-all hover:-translate-y-0.5 flex items-center gap-2">
+            <Users size={16} /> Daftarkan Pasien
+          </Link>
+        </div>
+      </header>
+
+      {/* ─── Stats Row (Rounded Apple) ──────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map(s => (
+          <div key={s.label} className="bg-white rounded-[32px] p-6 apple-shadow border border-black/[0.03] group hover:scale-[1.02] transition-all">
+            <div className={`w-12 h-12 rounded-2xl ${s.color} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+              <s.Icon size={20} />
+            </div>
+            <p className="text-gray-400 text-[11px] uppercase tracking-widest font-bold mb-1">{s.label}</p>
+            <p className="text-[#1D1D1F] text-3xl sf-display-heavy tabular-nums leading-none">{s.value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Appointment list */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-black text-[#0C2340]">Appointment Hari Ini</h2>
-            <Link href="/admin/appointments" className="text-[#0891B2] font-bold text-sm hover:underline">
-              Lihat Semua →
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* ─── LEFT: Appointment List (Modern Table-less) ────────────────── */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-[22px] sf-display-heavy tracking-tight text-[#1D1D1F]">Antrian Hari Ini</h3>
+            <Link href="/admin/appointments" className="text-sm sf-display text-apple-blue hover:text-blue-700 flex items-center gap-1">
+              Lihat Detail <TrendingUp size={14}/>
             </Link>
           </div>
 
           {(!todayApts || todayApts.length === 0) ? (
-            <div className="bg-white rounded-[20px] border border-gray-100 p-12 text-center"
-              style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-              <Calendar size={40} className="text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm font-semibold">Belum ada appointment hari ini</p>
-              <Link href="/admin/appointments/walkin"
-                className="inline-flex mt-4 px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-hover transition-colors">
-                + Daftarkan Walk-in
-              </Link>
+            <div className="bg-white rounded-[32px] p-16 text-center apple-shadow border border-black/[0.03]">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar size={32} className="text-gray-300" />
+              </div>
+              <p className="text-gray-500 sf-display">Belum ada pasien yang terdaftar hari ini.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <div className="space-y-4">
               {(todayApts as any[]).map((apt, i) => {
                 const patientName = apt.patients?.full_name ?? 'Pasien'
                 const doctorName  = apt.doctors?.full_name  ?? 'Dokter'
                 const noRM        = apt.patients?.no_rm ?? '—'
                 const time        = new Date(apt.scheduled_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                const styleCls    = STATUS_STYLE[apt.status] ?? 'bg-gray-50 text-gray-500 border-gray-200'
+                const statusKey   = apt.status as keyof typeof STATUS_STYLE
+                
                 return (
                   <div key={apt.id}
-                    className="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4"
-                    style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.04)', animationDelay: `${i * 40}ms` }}
+                    className="bg-white rounded-[24px] p-5 apple-shadow apple-shadow-hover border border-black/[0.02] flex items-center justify-between group"
                   >
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(patientName)} flex items-center justify-center text-white font-black text-sm flex-shrink-0`}>
-                      {apt.queue_number ?? '—'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="font-black text-[#0C2340] text-sm">{patientName}</p>
-                        <span className="text-[11px] text-gray-400 font-mono">{noRM}</span>
+                    <div className="flex items-center gap-5 min-w-0">
+                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarGradient(patientName)} flex items-center justify-center text-white font-black text-lg flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                        {apt.queue_number ?? '—'}
                       </div>
-                      <p className="text-xs text-gray-500">{doctorName} · {time}</p>
-                      {apt.complaint && <p className="text-xs text-gray-400 truncate mt-0.5">{apt.complaint}</p>}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="sf-display text-[17px] text-[#1D1D1F] truncate">{patientName}</p>
+                          <span className="text-[12px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded">{noRM}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[13px] text-gray-500 font-medium">
+                          <span>{doctorName}</span>
+                          <span>•</span>
+                          <span>{time}</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold ${styleCls}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {STATUS_LABEL[apt.status]}
-                    </span>
+                    
+                    <div className="flex items-center gap-4 shrink-0">
+                        <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide border-0 shadow-sm ${STATUS_STYLE[statusKey]}`}>
+                            {STATUS_LABEL[statusKey]}
+                        </span>
+                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-apple-blue group-hover:text-white transition-colors">
+                            <ArrowRight size={18} />
+                        </div>
+                    </div>
                   </div>
                 )
               })}
@@ -171,56 +182,53 @@ export default async function AdminDashboardPage() {
           )}
         </div>
 
-        {/* Right column */}
-        <div className="space-y-4">
-          <h2 className="text-base font-black text-[#0C2340]">Statistik Cepat</h2>
+        {/* ─── RIGHT: Secondary Stats & Tools ────────────────────────────── */}
+        <div className="lg:col-span-4 space-y-6">
+          <h3 className="text-[20px] sf-display-heavy tracking-tight text-[#1D1D1F] px-1">Statistik Cepat</h3>
 
-          <div className="bg-white rounded-[20px] border border-gray-100 p-6"
-            style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-            <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2">Dokter Aktif</p>
-            <p className="text-4xl font-black text-[#0C2340] tabular-nums">{activeDoctors ?? 0}</p>
-            <div className="flex mt-3">
-              {Array.from({ length: Math.min(activeDoctors ?? 0, 6) }).map((_, i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-white flex-shrink-0"
-                  style={{ marginLeft: i > 0 ? '-8px' : '0' }} />
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[20px] border border-gray-100 p-6"
-            style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-            <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2">Total Pasien</p>
-            <p className="text-4xl font-black text-[#0C2340] tabular-nums">{totalPatients ?? 0}</p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <TrendingUp size={13} className="text-emerald-500" />
-              <p className="text-xs text-emerald-600 font-bold">Terdaftar di klinik</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[20px] border border-gray-100 p-6"
-            style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-            <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2">Rating Klinik</p>
-            <p className="text-4xl font-black text-[#0C2340]">4.8</p>
-            <div className="flex gap-0.5 mt-2">
+          <div className="bg-[#1D1D1F] text-white rounded-[32px] p-8 apple-shadow relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-apple-blue opacity-20 rounded-full blur-2xl group-hover:opacity-30 transition-opacity"></div>
+            <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2 relative z-10">Rating Klinik</p>
+            <p className="text-5xl sf-display-heavy text-white relative z-10">4.8</p>
+            <div className="flex gap-1 mt-4 relative z-10">
               {[1,2,3,4,5].map(i => (
-                <Star key={i} size={16} className="text-amber-400 fill-amber-400" />
+                <Star key={i} size={20} className="text-amber-400 fill-amber-400" />
               ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-6 relative z-10 font-medium">Berdasarkan 1.2k+ ulasan pasien</p>
+          </div>
+
+          <div className="bg-white rounded-[32px] p-7 apple-shadow border border-black/[0.03]">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-1">Dokter Aktif</p>
+                    <p className="text-4xl sf-display-heavy text-[#1D1D1F] tabular-nums">{activeDoctors ?? 0}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-apple-blue flex items-center justify-center">
+                    <GraduationCap size={24} />
+                </div>
+            </div>
+            <div className="flex -space-x-3 overflow-hidden">
+              {Array.from({ length: Math.min(activeDoctors ?? 0, 6) }).map((_, i) => (
+                <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-white flex-shrink-0 shadow-sm" />
+              ))}
+              {(activeDoctors ?? 0) > 6 && (
+                <div className="w-10 h-10 rounded-full bg-gray-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-400 flex-shrink-0">
+                    +{(activeDoctors ?? 0) - 6}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/admin/appointments/walkin"
-              className="flex flex-col items-center gap-1 py-3 bg-[#0891B2] hover:bg-[#0e7490] text-white font-bold rounded-2xl transition-all text-xs shadow-sm text-center">
-              <span className="text-lg">🚶</span>
-              Walk-in
-            </Link>
-            <Link href="/admin/appointments"
-              className="flex flex-col items-center gap-1 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-secondary font-bold rounded-2xl transition-all text-xs text-center">
-              <span className="text-lg">📋</span>
-              Antrian
-            </Link>
+          <div className="bg-white rounded-[32px] p-7 apple-shadow border border-black/[0.03]">
+            <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2">Pasien Terdaftar</p>
+            <p className="text-4xl sf-display-heavy text-[#1D1D1F] tabular-nums">{totalPatients ?? 0}</p>
+            <div className="flex items-center gap-1.5 mt-3">
+              <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold">TERVERIFIKASI</div>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   )

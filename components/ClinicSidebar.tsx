@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
-  ClipboardList, BarChart3, Tag, FileCheck, Pill, CalendarCheck,
+  ClipboardList, BarChart3, Tag, FileCheck, Pill, CalendarCheck, ChevronRight
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -18,15 +18,15 @@ type NavItem = { href: string; Icon: LucideIcon; label: string }
 const NAV: Record<Role, NavItem[]> = {
   admin: [
     { href: '/admin',                     Icon: LayoutDashboard, label: 'Dashboard'        },
-    { href: '/admin/appointments',        Icon: ClipboardList,   label: 'Antrian'          },
-    { href: '/admin/patients',            Icon: Users,           label: 'Pasien'           },
+    { href: '/admin/appointments',        Icon: ClipboardList,   label: 'Antrian Live'     },
+    { href: '/admin/patients',            Icon: Users,           label: 'Database Pasien'  },
     { href: '/admin/schedule',            Icon: Calendar,        label: 'Jadwal Dokter'    },
-    { href: '/admin/billing',             Icon: CreditCard,      label: 'Billing'          },
+    { href: '/admin/billing',             Icon: CreditCard,      label: 'Keuangan & Billing'},
     { href: '/admin/treatments',          Icon: Tag,             label: 'Tindakan & Tarif' },
-    { href: '/admin/medicines',           Icon: Pill,            label: 'Stok Obat'        },
+    { href: '/admin/medicines',           Icon: Pill,            label: 'Stok Obat (Apotek)'},
     { href: '/admin/medical-letters',     Icon: FileCheck,       label: 'Surat Keterangan' },
     { href: '/admin/shifts',              Icon: CalendarCheck,   label: 'Jadwal Staf'      },
-    { href: '/admin/laporan',             Icon: BarChart3,       label: 'Laporan'          },
+    { href: '/admin/laporan',             Icon: BarChart3,       label: 'Laporan Analitik' },
     { href: '/admin/settings',            Icon: Settings,        label: 'Pengaturan'       },
   ],
   doctor: [
@@ -39,14 +39,8 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/patient',         Icon: LayoutDashboard, label: 'Dashboard'         },
     { href: '/patient/booking', Icon: Calendar,        label: 'Buat Appointment'  },
     { href: '/patient/records', Icon: Activity,        label: 'Rekam Medis'       },
-    { href: '/patient/profile', Icon: User,            label: 'Profil'            },
+    { href: '/patient/profile', Icon: User,            label: 'Profil Saya'       },
   ],
-}
-
-const ROLE_LABEL: Record<Role, string> = {
-  admin:   'Admin Portal',
-  doctor:  'Doctor Portal',
-  patient: 'Patient Portal',
 }
 
 function getInitials(name: string) {
@@ -54,25 +48,15 @@ function getInitials(name: string) {
 }
 
 type Props = {
-  role      : Role
-  userName  : string
-  userSub?  : string
+  role           : Role
+  userName       : string
+  userSub?       : string
+  isCollapsed    : boolean
+  setIsCollapsed : (v: boolean) => void
 }
 
-export default function ClinicSidebar({ role, userName, userSub }: Props) {
-  const pathname                    = usePathname()
-  const [collapsed, setCollapsed]   = useState(false)
-
-  // Persist collapse state
-  useEffect(() => {
-    const saved = localStorage.getItem('clinic-sb-collapsed') === 'true'
-    setCollapsed(saved)
-  }, [])
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('sidebar-collapsed', collapsed)
-    localStorage.setItem('clinic-sb-collapsed', String(collapsed))
-  }, [collapsed])
+export default function ClinicSidebar({ role, userName, userSub, isCollapsed, setIsCollapsed }: Props) {
+  const pathname = usePathname()
 
   const isActive = (href: string) =>
     href === `/${role}` ? pathname === `/${role}` : pathname.startsWith(href)
@@ -81,122 +65,101 @@ export default function ClinicSidebar({ role, userName, userSub }: Props) {
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-full z-50 shadow-2xl flex flex-col transition-all duration-300 ease-in-out ${
-        collapsed ? 'w-16' : 'w-64'
-      }`}
-      style={{ background: 'linear-gradient(180deg, #0A2342 0%, #0f2d5c 60%, #1B4F8A 100%)' }}
+      className={`hidden md:flex flex-col fixed left-0 top-0 h-full apple-glass border-r border-black/5 z-50 shrink-0 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
+      ${isCollapsed ? 'w-20' : 'w-64'}`}
     >
-      {/* Logo / Brand */}
-      <div className={`border-b border-white/10 flex items-center h-[72px] ${
-        collapsed ? 'justify-center px-2' : 'px-5'
-      }`}>
-        <Link
-          href={`/${role === 'patient' ? 'patient' : role === 'doctor' ? 'doctor' : 'admin'}`}
-          className="flex items-center gap-3"
-        >
-          <Image
-            src="/images/Icon.png"
-            alt="Japan Arena Corp"
-            width={48} height={48}
-            className="w-12 h-12 object-contain flex-shrink-0"
+      {/* Collapse Toggle */}
+      <button 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-10 bg-white border border-black/10 rounded-full p-1.5 shadow-sm text-gray-400 hover:text-black hover:shadow-md z-30 transform transition-all hover:scale-110"
+      >
+        {isCollapsed ? <ChevronRight size={14} strokeWidth={2.5}/> : <ChevronLeft size={14} strokeWidth={2.5}/>}
+      </button>
+
+      {/* Logo Section */}
+      <div className="px-6 pt-10 pb-6 flex items-center h-24 shrink-0 overflow-hidden">
+        <div className={`flex items-center gap-3 transition-opacity duration-200 ${isCollapsed ? 'hidden opacity-0' : 'flex opacity-100'}`}>
+          <Image 
+            src="/images/Icon.png" 
+            alt="Japan Arena Logo" 
+            width={40} height={40} 
+            className="w-10 h-10 object-contain drop-shadow-sm"
             priority
           />
-          {!collapsed && (
-            <div>
-              <p className="text-white font-black text-sm leading-tight tracking-tight">
-                Clinic Platform
-              </p>
-              <p className="text-white/40 text-[11px] font-medium mt-0.5">
-                by Japan Arena Corp
-              </p>
+          <div>
+            <h1 className="text-xl sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Japan Arena</h1>
+            <div className="mt-1 bg-gradient-to-r from-[#0071E3] to-[#42A1FF] text-white text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-widest inline-block shadow-sm">
+              Clinic Platform
             </div>
-          )}
-        </Link>
-        {collapsed && (
-          <div className="hidden">{/* spacer */}</div>
-        )}
+          </div>
+        </div>
+        <div className={`mx-auto shrink-0 ${isCollapsed ? 'flex' : 'hidden'}`}>
+          <Image 
+            src="/images/Icon.png" 
+            alt="Logo" 
+            width={36} height={36} 
+            className="w-9 h-9 object-contain drop-shadow-sm"
+          />
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-4 overflow-y-auto space-y-0.5">
-        {items.map(item => {
+      {/* Navigation */}
+      <nav className="flex-1 px-3 space-y-1.5 mt-4 overflow-y-auto scrollbar-hide pb-4">
+        <p className={`px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 transition-opacity ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+          {role.toUpperCase()} MENU
+        </p>
+        
+        {items.map((item) => {
           const active = isActive(item.href)
+          const Icon = item.Icon
           return (
-            <Link
-              key={item.href}
+            <Link 
+              key={item.href} 
               href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-3 rounded-xl text-sm font-semibold transition-all duration-150
-                ${collapsed ? 'justify-center px-0 py-3' : 'px-3 py-2.5'}
-                ${active
-                  ? 'bg-white text-[#0C2340]'
-                  : 'text-white/60 hover:bg-white/10 hover:text-white'
-                }`}
+              className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-3'} py-2.5 rounded-xl text-sm sf-display relative overflow-hidden transition-colors
+                ${active 
+                  ? 'bg-[#0071E3]/10 text-[#0071E3] font-bold' 
+                  : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'}
+              `}
+              title={isCollapsed ? item.label : undefined}
             >
-              <item.Icon size={17} className={`flex-shrink-0 ${active ? 'text-primary' : ''}`} />
-              {!collapsed && <span className="flex-1 tracking-tight">{item.label}</span>}
-              {!collapsed && active && (
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
-              )}
+              {active && <div className="absolute left-0 top-[15%] h-[70%] w-[3px] bg-[#0071E3] rounded-r-md"></div>}
+              <div className={`${isCollapsed ? '' : 'w-6'} flex justify-center shrink-0`}>
+                <Icon size={18} className={`transition-opacity ${active ? 'opacity-100' : 'opacity-70'}`} />
+              </div>
+              {!isCollapsed && <span className="ml-3 tracking-tight whitespace-nowrap">{item.label}</span>}
             </Link>
           )
         })}
       </nav>
 
-      {/* Footer */}
-      <div className={`border-t border-white/10 ${collapsed ? 'p-3' : 'p-4'} space-y-3`}>
-        {!collapsed && (
-          <div className="flex items-center gap-3 px-1">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white text-xs font-black flex-shrink-0 shadow-md">
-              {getInitials(userName)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-white truncate leading-tight">{userName}</p>
-              {userSub && <p className="text-[11px] text-white/40 truncate mt-0.5">{userSub}</p>}
-            </div>
+      {/* Profile & Logout */}
+      <div className="p-4 border-t border-black/5 bg-white/50 shrink-0">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''} p-2 hover:bg-black/5 rounded-xl transition-colors relative mb-2`}>
+          <div className="w-10 h-10 rounded-full bg-white border border-black/10 overflow-hidden shrink-0 shadow-sm flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+             <span className="text-sm font-bold text-gray-600">{getInitials(userName)}</span>
           </div>
-        )}
-
-        {collapsed && (
-          <div className="flex justify-center">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white text-xs font-black shadow-md" title={userName}>
-              {getInitials(userName)}
+          {!isCollapsed && (
+            <div className="ml-3 flex-1 min-w-0">
+              <p className="text-[14px] sf-display truncate text-gray-900">{userName}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                  <p className="text-[11px] text-gray-500 font-medium truncate">{userSub || 'Member'}</p>
+              </div>
             </div>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          {!collapsed && (
-            <a
-              href="/auth/logout"
-              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-xs font-bold text-white/40 hover:bg-white/10 hover:text-white/80 transition-all"
-            >
-              <LogOut size={12} /> Keluar
-            </a>
-          )}
-          {collapsed && (
-            <a
-              href="/auth/logout"
-              title="Keluar"
-              className="w-full flex items-center justify-center py-2 rounded-xl text-white/40 hover:bg-white/10 hover:text-white transition-all"
-            >
-              <LogOut size={14} />
-            </a>
           )}
         </div>
 
-        {/* Collapse toggle — desktop */}
-        <button
-          onClick={() => setCollapsed(c => !c)}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-white/30 hover:bg-white/10 hover:text-white/60 transition-all text-xs font-bold"
-          title={collapsed ? 'Perluas sidebar' : 'Perkecil sidebar'}
-        >
-          <ChevronLeft
-            size={15}
-            className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
-          />
-          {!collapsed && <span>Perkecil</span>}
-        </button>
+        <form action="/auth/logout" method="post">
+          <button 
+            type="submit" 
+            className={`flex items-center justify-center gap-2 w-full py-2 bg-[#FF3B30]/10 text-[#FF3B30] text-[11px] font-bold rounded-lg hover:bg-[#FF3B30]/20 transition-colors ${isCollapsed ? 'px-0' : 'px-4'}`}
+            title={isCollapsed ? 'Keluar' : undefined}
+          >
+            <LogOut size={14} />
+            {!isCollapsed && <span>Keluar</span>}
+          </button>
+        </form>
       </div>
     </aside>
   )

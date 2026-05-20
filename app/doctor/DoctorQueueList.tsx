@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { UserCheck, Stethoscope, FileText, XCircle } from 'lucide-react'
+import { UserCheck, Stethoscope, FileText, XCircle, Check } from 'lucide-react'
 
 const STATUS_STEPS = ['Menunggu', 'Dipanggil', 'Diperiksa', 'Selesai']
 const STATUS_MAP: Record<string, string> = { menunggu:'Menunggu', dipanggil:'Dipanggil', diperiksa:'Diperiksa', selesai:'Selesai' }
@@ -51,7 +51,7 @@ export default function DoctorQueueList({ initialQueue }: { initialQueue: Apt[] 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {queue.map((a, i) => {
         const patientName = a.patients?.full_name ?? 'Pasien'
         const noRM        = a.patients?.no_rm ?? '—'
@@ -63,66 +63,81 @@ export default function DoctorQueueList({ initialQueue }: { initialQueue: Apt[] 
         const isActive    = ['menunggu','dipanggil','diperiksa'].includes(a.status)
 
         return (
-          <div key={a.id} className={`bg-white rounded-2xl p-6 border shadow-sm transition-shadow hover:shadow-md ${isDone ? 'opacity-60 border-gray-100' : 'border-gray-100'}`}
+          <div key={a.id} className={`bg-white rounded-[32px] p-6 md:p-8 apple-shadow border border-black/[0.02] transition-all duration-300 group ${isDone ? 'opacity-60' : 'hover:scale-[1.01]'}`}
             style={{ animationDelay:`${i*50}ms` }}>
-            <div className="flex items-start gap-5">
-              {/* Queue number */}
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(patientName)} flex items-center justify-center text-white font-black text-xl flex-shrink-0`}>
-                {a.queue_number ?? i+1}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-black text-secondary">{patientName}</h3>
-                    <p className="text-sm text-muted-foreground font-semibold">
-                      {noRM} · {calcAge(a.patients?.date_of_birth ?? null)} · {time}
-                    </p>
-                    {a.complaint && (
-                      <p className="text-sm text-secondary/70 mt-1 font-semibold">{a.complaint}</p>
-                    )}
-                  </div>
-
-                  {/* Action buttons */}
-                  {isActive && (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {nextSt && (
-                        <button onClick={() => updateStatus(a.id, nextSt)} disabled={pending}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors font-bold text-sm disabled:opacity-50">
-                          {NEXT_ICON[a.status]} {NEXT_LABEL[a.status]}
-                        </button>
-                      )}
-                      {a.status === 'diperiksa' && (
-                        <Link href={`/doctor/records?apt=${a.id}`}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-colors font-bold text-sm">
-                          <FileText size={14} /> Rekam Medis
-                        </Link>
-                      )}
-                      <button onClick={() => updateStatus(a.id, 'batal')} disabled={pending}
-                        className="p-2 hover:bg-red-50 rounded-xl transition-colors" title="Batalkan">
-                        <XCircle size={16} className="text-red-400" />
-                      </button>
-                    </div>
-                  )}
+            <div className="flex flex-col lg:flex-row gap-8">
+              
+              <div className="flex items-start gap-6 flex-1 min-w-0">
+                {/* Queue number (Apple Style Badge) */}
+                <div className={`w-16 h-16 rounded-[22px] bg-gradient-to-br ${avatarColor(patientName)} flex flex-col items-center justify-center text-white shrink-0 shadow-lg group-hover:scale-105 transition-transform`}>
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Antrean</span>
+                  <span className="text-2xl sf-display-heavy leading-none">{a.queue_number ?? i+1}</span>
                 </div>
 
-                {/* Progress steps */}
-                <div className="flex items-center">
-                  {STATUS_STEPS.map((s, idx) => (
-                    <div key={s} className="flex-1 flex items-center">
-                      <div className="flex flex-col items-center flex-1">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm transition-all ${idx <= stepIdx ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
-                          {idx+1}
+                <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <div>
+                            <h3 className="text-xl sf-display-heavy text-[#1D1D1F] mb-1">{patientName}</h3>
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 font-medium">
+                                <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{noRM}</span>
+                                <span>•</span>
+                                <span>{calcAge(a.patients?.date_of_birth ?? null)}</span>
+                                <span>•</span>
+                                <span>{time}</span>
+                            </div>
                         </div>
-                        <span className={`text-[10px] font-bold mt-1.5 ${idx <= stepIdx ? 'text-primary' : 'text-gray-400'}`}>{s}</span>
-                      </div>
-                      {idx < STATUS_STEPS.length-1 && (
-                        <div className={`h-1 flex-1 mx-1 rounded-full ${idx < stepIdx ? 'bg-primary' : 'bg-gray-200'}`} />
-                      )}
+
+                        {/* Action buttons (Modern Pill) */}
+                        {isActive && (
+                            <div className="flex items-center gap-2">
+                            {nextSt && (
+                                <button onClick={() => updateStatus(a.id, nextSt)} disabled={pending}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-apple-blue text-white rounded-full hover:bg-[#005BB5] transition-all sf-display text-sm disabled:opacity-50 glow-button">
+                                {NEXT_ICON[a.status]} {NEXT_LABEL[a.status]}
+                                </button>
+                            )}
+                            {a.status === 'diperiksa' && (
+                                <Link href={`/doctor/records?apt=${a.id}`}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-[#F5F5F7] text-[#1D1D1F] border border-black/5 rounded-full transition-all sf-display text-sm hover:bg-gray-200">
+                                <FileText size={16} className="text-apple-blue" /> Rekam Medis
+                                </Link>
+                            )}
+                            <button onClick={() => updateStatus(a.id, 'batal')} disabled={pending}
+                                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all" title="Batalkan">
+                                <XCircle size={20} strokeWidth={2} />
+                            </button>
+                            </div>
+                        )}
                     </div>
-                  ))}
+
+                    {a.complaint && (
+                        <div className="bg-[#F8F9FA] rounded-2xl p-4 mb-6 border border-black/[0.02]">
+                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Keluhan Utama</p>
+                            <p className="text-[15px] text-[#1D1D1F] font-medium leading-relaxed italic">"{a.complaint}"</p>
+                        </div>
+                    )}
+
+                    {/* Progress steps (Clean Apple Style) */}
+                    <div className="flex items-center gap-2">
+                    {STATUS_STEPS.map((s, idx) => {
+                        const isPast = idx < stepIdx;
+                        const isCurrent = idx === stepIdx;
+                        return (
+                            <div key={s} className="flex-1">
+                                <div className="flex flex-col gap-2">
+                                    <div className={`h-1.5 rounded-full transition-all duration-500 ${isPast || isCurrent ? 'bg-apple-blue' : 'bg-gray-100'}`} />
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isCurrent ? 'text-apple-blue' : 'text-gray-400'}`}>{s}</span>
+                                        {isPast && <div className="w-2 h-2 rounded-full bg-apple-blue/20 flex items-center justify-center"><Check size={8} className="text-apple-blue"/></div>}
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
+                    </div>
                 </div>
               </div>
+
             </div>
           </div>
         )

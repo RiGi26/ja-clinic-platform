@@ -46,91 +46,155 @@ export default async function PatientDashboardPage() {
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' })
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-10">
+  const nameFirst = user.full_name?.split(' ')[0] || 'User'
 
-      {/* Appointment ticket */}
+  return (
+    <div className="max-w-5xl mx-auto space-y-10 pb-16 animate-fade-in">
+      
+      {/* ─── Header Section ────────────────────────────────── */}
+      <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
+        <div>
+          <p className="text-[12px] text-gray-500 mb-1.5 font-bold uppercase tracking-widest flex items-center gap-2 sf-display">
+            <span className="w-2 h-2 rounded-full bg-apple-blue"></span>
+            Patient Portal • {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+          </p>
+          <h2 className="text-[32px] md:text-[40px] sf-display-heavy tracking-tight text-[#1D1D1F] leading-tight">
+            Okaeri, {nameFirst}.
+          </h2>
+          <p className="text-gray-500 text-sm mt-1 sf-display">Selamat datang kembali di Japan Arena Clinic.</p>
+        </div>
+        
+        <Link href="/patient/booking"
+          className="bg-apple-blue text-white px-8 py-3.5 rounded-full text-[15px] sf-display-heavy shadow-lg glow-button text-center">
+          Buat Appointment Baru
+        </Link>
+      </header>
+
+      {/* ─── Primary Action: Upcoming Appointment ────────────────────── */}
       {apt ? (
-        <div className="rounded-3xl p-8 text-white shadow-xl" style={{ background:'linear-gradient(135deg, #0891B2, #06B6D4)' }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest font-bold mb-2 text-cyan-100">Appointment Berikutnya</p>
-              <h2 className="text-3xl font-black mb-5">{apt.complaint ?? 'Kunjungan Rutin'}</h2>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3"><Calendar size={18} className="text-cyan-100 flex-shrink-0" /><span className="font-bold text-sm">{fmtDate(apt.scheduled_at)}</span></div>
-                <div className="flex items-center gap-3"><Clock size={18} className="text-cyan-100 flex-shrink-0" /><span className="font-bold text-sm">{fmtTime(apt.scheduled_at)} WIB</span></div>
-                <div className="flex items-center gap-3"><Activity size={18} className="text-cyan-100 flex-shrink-0" /><span className="font-bold text-sm">{(apt.doctors as any)?.full_name ?? '—'}</span></div>
+        <div className="bg-[#1D1D1F] text-white rounded-[32px] p-8 md:p-10 apple-shadow relative overflow-hidden group animate-fade-up">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-apple-blue opacity-10 rounded-full blur-[100px]"></div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest text-apple-blue">
+                Kunjungan Terdekat
+              </div>
+              <h2 className="text-3xl md:text-4xl sf-display-heavy tracking-tight">{apt.complaint ?? 'Konsultasi Medis'}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-3">
+                <div className="flex items-center gap-3 text-gray-300">
+                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center"><Calendar size={18} className="text-apple-blue" /></div>
+                    <span className="font-semibold text-sm">{fmtDate(apt.scheduled_at)}</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center"><Clock size={18} className="text-apple-blue" /></div>
+                    <span className="font-semibold text-sm">{fmtTime(apt.scheduled_at)} WIB</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center"><Activity size={18} className="text-apple-blue" /></div>
+                    <span className="font-semibold text-sm">{(apt.doctors as any)?.full_name ?? '—'}</span>
+                </div>
               </div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center flex-shrink-0">
-              <p className="text-5xl font-black leading-none mb-1">{new Date(apt.scheduled_at).getDate()}</p>
-              <p className="text-xs font-bold text-cyan-100 uppercase tracking-widest">{new Date(apt.scheduled_at).toLocaleDateString('id-ID',{month:'short'})}</p>
+            
+            <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-[28px] p-8 text-center min-w-[140px]">
+              <p className="text-6xl font-black tracking-tighter mb-1 text-white">{new Date(apt.scheduled_at).getDate()}</p>
+              <p className="text-[13px] font-bold text-apple-blue uppercase tracking-widest">{new Date(apt.scheduled_at).toLocaleDateString('id-ID',{month:'long'})}</p>
             </div>
           </div>
-          <div className="mt-6 pt-6 border-t border-white/20 flex gap-3">
-            <button className="flex-1 bg-white text-primary rounded-xl py-3 font-bold text-sm hover:bg-cyan-50 transition-colors">Lihat Detail</button>
-            <button className="flex-1 bg-white/20 text-white rounded-xl py-3 font-bold text-sm hover:bg-white/30 transition-colors">Reschedule</button>
+          
+          <div className="mt-10 pt-8 border-t border-white/5 flex gap-4 relative z-10">
+            <button className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-gray-100 transition-all">Peta Lokasi</button>
+            <button className="bg-white/10 text-white border border-white/20 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white/20 transition-all">Reschedule</button>
           </div>
         </div>
       ) : (
-        <div className="rounded-3xl p-8 text-white shadow-xl" style={{ background:'linear-gradient(135deg, #0C2340, #0891B2)' }}>
-          <p className="text-xs uppercase tracking-widest font-bold mb-2 text-cyan-100">Appointment</p>
-          <h2 className="text-2xl font-black mb-3">Belum ada jadwal</h2>
-          <p className="text-white/70 text-sm mb-5">Buat appointment dengan dokter pilihan Anda</p>
-          <Link href="/patient/booking" className="inline-flex items-center gap-2 px-5 py-3 bg-white text-primary rounded-xl font-bold text-sm hover:bg-cyan-50 transition-colors">
-            <Calendar size={16} /> Buat Appointment
+        <div className="bg-white rounded-[32px] p-10 md:p-12 text-center apple-shadow border border-black/[0.03] animate-fade-up">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Calendar size={40} className="text-gray-200" />
+          </div>
+          <h2 className="text-2xl sf-display-heavy text-[#1D1D1F] mb-2">Belum ada jadwal kunjungan</h2>
+          <p className="text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">Jadwalkan konsultasi dengan dokter spesialis kami dengan menekan tombol di bawah.</p>
+          <Link href="/patient/booking" className="inline-flex items-center gap-2 px-8 py-3.5 bg-apple-blue text-white rounded-full font-bold text-[15px] shadow-lg glow-button">
+            <Calendar size={18} /> Atur Jadwal Sekarang
           </Link>
         </div>
       )}
 
-      {/* Health summary + last visit */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-4">Ringkasan Kesehatan</h3>
+      {/* ─── Health Cards Row ────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-up delay-100">
+        
+        {/* Vital Signs / Summary */}
+        <div className="bg-white rounded-[32px] p-8 apple-shadow border border-black/[0.03]">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-[12px] uppercase tracking-widest font-bold text-gray-400">Status Kesehatan Terakhir</h3>
+            <Activity size={18} className="text-emerald-500" />
+          </div>
+          
           {last ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between"><span className="text-sm font-bold text-secondary">Tekanan Darah</span><span className="text-sm font-bold text-success">{last.blood_pressure_sys}/{last.blood_pressure_dia} mmHg</span></div>
-              <div className="flex items-center justify-between"><span className="text-sm font-bold text-secondary">Berat Badan</span><span className="text-sm font-bold text-primary">{last.weight ?? '—'} kg</span></div>
-              <div className="flex items-center justify-between"><span className="text-sm font-bold text-secondary">Golongan Darah</span><span className="text-sm font-bold text-destructive">{patientRec?.blood_type ?? '—'}</span></div>
+            <div className="space-y-6">
+                <div className="flex justify-between items-end border-b border-black/5 pb-4">
+                    <div>
+                        <p className="text-[11px] text-gray-400 font-bold uppercase mb-1">Tekanan Darah</p>
+                        <p className="text-2xl sf-display-heavy text-[#1D1D1F] tabular-nums">{last.blood_pressure_sys}/{last.blood_pressure_dia} <span className="text-xs text-gray-400 font-normal">mmHg</span></p>
+                    </div>
+                    <div className="px-2 py-1 bg-[#F3FBF5] text-green-600 rounded-lg text-[10px] font-bold">NORMAL</div>
+                </div>
+                <div className="flex justify-between items-end border-b border-black/5 pb-4">
+                    <div>
+                        <p className="text-[11px] text-gray-400 font-bold uppercase mb-1">Berat Badan</p>
+                        <p className="text-2xl sf-display-heavy text-[#1D1D1F] tabular-nums">{last.weight ?? '—'} <span className="text-xs text-gray-400 font-normal">kg</span></p>
+                    </div>
+                </div>
+                <div className="flex justify-between items-end">
+                    <div>
+                        <p className="text-[11px] text-gray-400 font-bold uppercase mb-1">Golongan Darah</p>
+                        <p className="text-2xl sf-display-heavy text-[#FF3B30]">{patientRec?.blood_type ?? '—'}</p>
+                    </div>
+                    {patientRec?.allergies && (
+                        <div className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold border border-red-100">ALERGI: {patientRec.allergies}</div>
+                    )}
+                </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Belum ada data rekam medis</p>
+            <div className="py-8 text-center border-2 border-dashed border-gray-100 rounded-2xl">
+                <p className="text-sm text-gray-400 sf-display">Data kesehatan akan muncul setelah kunjungan pertama Anda.</p>
+            </div>
           )}
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-4">Kunjungan Terakhir</h3>
+
+        {/* Recent Visit Details */}
+        <div className="bg-white rounded-[32px] p-8 apple-shadow border border-black/[0.03]">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-[12px] uppercase tracking-widest font-bold text-gray-400">Histori Kunjungan</h3>
+            <Link href="/patient/records" className="text-[11px] font-bold text-apple-blue hover:underline">LIHAT SEMUA</Link>
+          </div>
+          
           {last ? (
-            <div className="space-y-2">
-              <p className="text-sm font-black text-secondary">{new Date(last.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p>
-              <p className="text-xs text-muted-foreground">{(last.doctors as any)?.full_name ?? '—'}</p>
-              {last.diagnoses?.length > 0 && (
-                <div className="pt-3 border-t border-gray-100">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Diagnosis</p>
-                  <p className="text-sm font-bold text-secondary">{last.diagnoses[0]}</p>
+            <div className="flex flex-col h-full">
+                <div className="bg-gray-50/50 rounded-2xl p-5 mb-6 border border-black/5">
+                    <p className="text-lg sf-display-heavy text-[#1D1D1F] mb-1">{new Date(last.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p>
+                    <p className="text-sm text-gray-500 sf-display">Ditangani oleh {(last.doctors as any)?.full_name ?? 'Dokter Klinik'}</p>
                 </div>
-              )}
+                
+                {last.diagnoses?.length > 0 && (
+                    <div className="flex-1">
+                        <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-3">Diagnosis Utama</p>
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-apple-blue flex items-center justify-center shrink-0"><FileText size={20}/></div>
+                            <p className="text-[15px] font-semibold text-[#1D1D1F] leading-tight pt-1">{last.diagnoses[0]}</p>
+                        </div>
+                    </div>
+                )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Belum ada riwayat kunjungan</p>
+            <div className="py-8 text-center border-2 border-dashed border-gray-100 rounded-2xl h-full flex items-center justify-center">
+                <p className="text-sm text-gray-400 sf-display">Belum ada riwayat kunjungan medis.</p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link href="/patient/booking" className="bg-primary text-white rounded-2xl p-6 hover:bg-primary-hover transition-colors group block">
-          <div className="flex items-center justify-between">
-            <div><Calendar size={28} className="mb-3" /><h3 className="text-lg font-black mb-1">Buat Appointment</h3><p className="text-sm text-cyan-100">Jadwalkan kunjungan Anda</p></div>
-            <span className="text-3xl group-hover:translate-x-1 transition-transform">→</span>
-          </div>
-        </Link>
-        <Link href="/patient/records" className="bg-white border border-gray-200 rounded-2xl p-6 hover:border-primary hover:shadow-md transition-all group block">
-          <div className="flex items-center justify-between">
-            <div><FileText size={28} className="mb-3 text-primary" /><h3 className="text-lg font-black text-secondary mb-1">Rekam Medis</h3><p className="text-sm text-muted-foreground">Lihat riwayat kesehatan</p></div>
-            <span className="text-3xl text-primary group-hover:translate-x-1 transition-transform">→</span>
-          </div>
-        </Link>
-      </div>
     </div>
   )
 }

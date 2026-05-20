@@ -1,31 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Brand Colors ──────────────────────────────── */
-  --color-primary:          #0891B2;
-  --color-primary-hover:    #0e7490;
-  --color-secondary:        #0C2340;
-  --color-accent:           #06B6D4;
-  --color-success:          #10B981;
-  --color-warning:          #F59E0B;
-  --color-danger:           #EF4444;
-  --color-destructive:      #EF4444;
-  --color-background:       #F0F9FF;
-  --color-muted:            #E0F2FE;
-  --color-muted-foreground: #64748B;
-  --color-bg:               #F0F9FF;
+  /* ── Apple Blue Ecosystem ── */
+  --color-primary:          #0071E3;
+  --color-primary-hover:    #005BB5;
+  --color-secondary:        #1D1D1F;
+  --color-accent:           #0071E3;
+  
+  --color-apple-blue:       #0071E3;
+  --color-apple-blue-light: #42A1FF;
+  
+  --color-success:          #34C759;
+  --color-warning:          #FF9500;
+  --color-danger:           #FF3B30;
+  --color-destructive:      #FF3B30;
+  
+  --color-bg:               #F5F5F7; /* macOS Hardware Background */
   --color-bg-card:          #FFFFFF;
+  --color-bg-glass:         rgba(255, 255, 255, 0.65);
 
-  /* ── Typography ────────────────────────────────── */
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-text:             #1D1D1F;
+  --color-text-sub:         #475569;
+  --color-text-muted:       #86868B;
 
-  /* ── Radius ────────────────────────────────────── */
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.5rem;
+  /* ── Typography ── */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
 
-  /* ── Shadows ───────────────────────────────────── */
-  --shadow-card:  0 4px 24px rgba(0,0,0,0.06);
-  --shadow-panel: 0 8px 40px rgba(0,0,0,0.10);
+  /* ── Radius (Apple Soft) ── */
+  --radius-2xl:    1rem;
+  --radius-3xl:    1.5rem;
+  --radius-4xl:    2rem;
+  --radius-apple:  32px;
+
+  /* ── Enhanced Apple Shadows ── */
+  --shadow-apple:       0 8px 30px rgba(0, 0, 0, 0.04);
+  --shadow-apple-hover: 0 12px 40px rgba(0, 0, 0, 0.08);
+  --shadow-glow:        0 8px 20px rgba(0, 113, 227, 0.3);
 }
 
 /* ── Base ──────────────────────────────────────────── */
@@ -34,32 +45,67 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background-color: #F0F9FF;
-  color: #0C2340;
+  font-family: var(--font-sans);
+  background-color: #F5F5F7;
+  color: #1D1D1F;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Sidebar collapse ──────────────────────────────── */
-.clinic-content { transition: margin-left 0.3s ease; }
+/* ── Global Utilities ──────────────────────────────── */
+@layer utilities {
+  .apple-glass { 
+    background: rgba(255, 255, 255, 0.65); 
+    backdrop-filter: blur(24px) saturate(180%); 
+    -webkit-backdrop-filter: blur(24px) saturate(180%); 
+    border: 1px solid rgba(255, 255, 255, 0.4); 
+  }
+  
+  .glow-button { 
+    box-shadow: 0 8px 20px rgba(0, 113, 227, 0.3); 
+    transition: all 0.3s ease; 
+  }
+  .glow-button:hover { 
+    box-shadow: 0 12px 25px rgba(0, 113, 227, 0.4); 
+    transform: translateY(-1px); 
+  }
+
+  .sf-display { font-weight: 600; letter-spacing: -0.015em; }
+  .sf-display-heavy { font-weight: 700; letter-spacing: -0.02em; }
+}
+
+/* ── Sidebar & Layout ── */
+.clinic-content { 
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
 
 @media (min-width: 768px) {
   .clinic-content                        { margin-left: 16rem; }
-  html.sidebar-collapsed .clinic-content { margin-left: 4rem;  }
+  html.sidebar-collapsed .clinic-content { margin-left: 5rem;  }
 }
 
 /* ── Animations ────────────────────────────────────── */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-.animate-fade-in-up { animation: fadeInUp 0.3s ease forwards; }
-.animate-fade-in    { animation: fadeIn   0.2s ease forwards; }
+.animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-fade-in { animation: fadeIn 0.4s ease forwards; }
+
+/* ── Scrollbar (macOS Style) ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
 /* ── Print ─────────────────────────────────────────── */
 @media print {
@@ -70,10 +116,6 @@ body {
   .clinic-content { margin-left: 0 !important; }
 }
 
-/* ── Scrollbar ─────────────────────────────────────── */
-::-webkit-scrollbar       { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #F0F9FF; }
-::-webkit-scrollbar-thumb { background: #BAE6FD; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #0891B2; }
-.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
-.scrollbar-hide::-webkit-scrollbar { display: none; }
+/* NProgress — override warna ke Apple Blue */
+#nprogress .bar { background: #0071E3 !important; height: 3px !important; }
+#nprogress .peg { box-shadow: 0 0 10px #0071E3, 0 0 5px #0071E3 !important; }

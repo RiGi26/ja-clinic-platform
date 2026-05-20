@@ -1,21 +1,15 @@
 /**
- * Custom Domain Proxy (Next.js 16 — proxy.ts menggantikan middleware.ts)
+ * Custom Domain Proxy & Auth Middleware (Next.js 16)
  *
- * Cara test lokal (tanpa domain asli):
- * 1. Edit file hosts (C:\Windows\System32\drivers\etc\hosts):
- *    Tambahkan: 127.0.0.1 kliniktest.local
- * 2. Set custom_domain di database:
- *    UPDATE clinics SET custom_domain = 'kliniktest.local' WHERE slug = 'demo-clinic';
- * 3. Buka browser: http://kliniktest.local:3000/admin
- * 4. Proxy akan detect 'kliniktest.local' sebagai custom domain dan inject x-clinic-id
- *
- * CATATAN: Berjalan di Edge Runtime.
- * Gunakan createClient dari @supabase/supabase-js langsung — JANGAN import dari
- * lib/supabase/server.ts karena menggunakan cookies() yang tidak tersedia di Edge.
+ * Menggabungkan deteksi custom domain dan proteksi autentikasi.
+ * Berjalan di Edge Runtime.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+
+const PROTECTED_PREFIXES = ['/admin', '/doctor', '/receptionist', '/patient', '/superadmin']
 
 function getAdminClient() {
   return createSupabaseClient(
@@ -26,6 +20,34 @@ function getAdminClient() {
 }
 
 export async function proxy(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  // ─── 1. Auth Middleware Logic ──────────────────────────────────────────
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const isProtected = PROTECTED_PREFIXES.some(p => request.nextUrl.pathname.startsWith(p))
+
+  if (!user && isProtected) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // ─── 2. Custom Domain Proxy Logic ──────────────────────────────────────
   const hostname = (
     request.headers.get('x-forwarded-host') ??
     request.headers.get('host') ??
@@ -41,7 +63,7 @@ export async function proxy(request: NextRequest) {
     hostname === ''
 
   if (isPlatformDomain) {
-    return NextResponse.next()
+    return supabaseResponse
   }
 
   // Custom domain — cari clinic_id di database
@@ -57,19 +79,17 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/domain-not-found', request.url))
     }
 
-    // Inject clinic_id ke header — dibaca di server components via headers()
-    const response = NextResponse.next()
-    response.headers.set('x-clinic-id', clinic.id as string)
-    response.headers.set('x-custom-domain', hostname)
-    return response
+    // Inject clinic_id ke header
+    supabaseResponse.headers.set('x-clinic-id', clinic.id as string)
+    supabaseResponse.headers.set('x-custom-domain', hostname)
+    return supabaseResponse
   } catch {
-    // Jika Supabase tidak bisa diakses, redirect ke halaman error
     return NextResponse.redirect(new URL('/domain-not-found', request.url))
   }
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|public|images|api|booking|auth/login|auth/logout|register|demo).*)',
   ],
 }
