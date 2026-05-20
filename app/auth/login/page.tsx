@@ -6,26 +6,6 @@ import { Eye, EyeOff, AlertCircle, Loader2, Sparkles } from 'lucide-react'
 
 // ─── Demo Banner (di bawah login card) ───────────────────────────
 function DemoBanner() {
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
-
-  async function handleDemo() {
-    setLoading(true); setError('')
-    try {
-      const res  = await fetch('/api/demo-clinic-login', { method: 'POST' })
-      const data = await res.json()
-      if (data.success) {
-        window.location.href = data.redirectTo ?? '/admin'
-      } else {
-        setError(data.error ?? 'Demo gagal. Coba lagi.')
-        setLoading(false)
-      }
-    } catch {
-      setError('Koneksi gagal. Coba lagi.')
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="mt-4 bg-white rounded-2xl border border-black/[0.05] px-5 py-4 apple-shadow animate-fade-up">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -33,16 +13,13 @@ function DemoBanner() {
           <Sparkles size={14} className="text-green-500 flex-shrink-0" />
           <p className="text-[13px] text-gray-500 font-medium">Ingin coba platform dulu tanpa daftar?</p>
         </div>
-        <button
-          onClick={handleDemo}
-          disabled={loading}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 text-[12px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-black/[0.07] rounded-xl transition-all disabled:opacity-50 flex-shrink-0"
+        <a
+          href="/demo"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 text-[12px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-black/[0.07] rounded-xl transition-all flex-shrink-0"
         >
-          {loading ? <Loader2 size={12} className="animate-spin" /> : null}
-          {loading ? 'Menyiapkan...' : 'Coba Demo Klinik →'}
-        </button>
+          Coba Demo →
+        </a>
       </div>
-      {error && <p className="text-[11px] text-red-500 mt-2 font-medium">{error}</p>}
     </div>
   )
 }
