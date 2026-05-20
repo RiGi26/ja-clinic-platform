@@ -13,19 +13,21 @@ async function getClinicId() {
   return data.clinic_id as string
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const clinicId = await getClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(request.url)
+  const source = searchParams.get('source')
 
   const now   = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
   const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString()
 
   const db = createAdminClient()
-  const { data, error } = await db
-    .from('appointments')
+  let q = db.from('appointments')
     .select(`
-      id, scheduled_at, status, complaint, type, queue_number,
+      id, scheduled_at, status, complaint, type, queue_number, source, booking_code,
       patients(id, full_name, no_rm, phone),
       doctors(id, full_name, specialty)
     `)
@@ -36,6 +38,9 @@ export async function GET() {
     .order('queue_number', { ascending: true, nullsFirst: false })
     .order('scheduled_at', { ascending: true })
 
+  if (source) q = q.eq('source', source)
+
+  const { data, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ appointments: data ?? [] })
 }

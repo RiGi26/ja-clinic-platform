@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import TopBar from '@/components/TopBar'
-import { Save, Plus, Trash2, Eye, EyeOff, Send, Bell, RefreshCw } from 'lucide-react'
+import { Save, Plus, Trash2, Eye, EyeOff, Send, Bell, RefreshCw, Link2, Copy, Check, ToggleLeft, ToggleRight } from 'lucide-react'
 
 const INPUT_CLS = 'w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
 const LABEL_CLS = 'block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5'
@@ -34,6 +34,10 @@ function fmtDt(iso: string) {
 
 export default function SettingsPage() {
   const [clinic, setClinic]     = useState({ name: '', address: '', phone: '', email: '', fonnte_token: '' })
+  type BookingLink = { id: string; slug: string; is_active: boolean }
+  const [bookingLink,  setBookingLink]  = useState<BookingLink | null>(null)
+  const [linkLoading,  setLinkLoading]  = useState(false)
+  const [linkCopied,   setLinkCopied]   = useState(false)
   const [doctors, setDoctors]   = useState<Doctor[]>([])
   const [saving, setSaving]     = useState(false)
   const [saved, setSaved]       = useState(false)
@@ -63,6 +67,7 @@ export default function SettingsPage() {
       if (d.doctors) setDoctors(d.doctors)
     })
     loadNotifications()
+    fetch('/api/admin/booking-link').then(r => r.json()).then(d => setBookingLink(d.link ?? null))
   }, [loadNotifications])
 
   function setC(k: string, v: string) { setClinic(c => ({ ...c, [k]: v })) }
@@ -117,6 +122,37 @@ export default function SettingsPage() {
     } finally {
       setBulkLoading(false)
     }
+  }
+
+  async function handleGenerateLink() {
+    setLinkLoading(true)
+    const res  = await fetch('/api/admin/booking-link', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generate' }),
+    })
+    const data = await res.json() as { link?: BookingLink }
+    if (data.link) setBookingLink(data.link)
+    setLinkLoading(false)
+  }
+
+  async function handleToggleLink() {
+    if (!bookingLink) return
+    setLinkLoading(true)
+    const res  = await fetch('/api/admin/booking-link', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'toggle', is_active: !bookingLink.is_active }),
+    })
+    const data = await res.json() as { link?: BookingLink }
+    if (data.link) setBookingLink(data.link)
+    setLinkLoading(false)
+  }
+
+  function handleCopyLink() {
+    if (!bookingLink) return
+    const url = `${process.env.NEXT_PUBLIC_APP_URL}/booking/${bookingLink.slug}`
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000)
+    })
   }
 
   return (
@@ -319,6 +355,83 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Booking Link Section */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
+            <div className="flex items-center gap-2 mb-5">
+              <Link2 size={18} className="text-primary" />
+              <h2 className="font-black text-secondary text-base">Link Booking Pasien</h2>
+            </div>
+
+            {!bookingLink ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Buat link booking agar pasien bisa booking appointment secara mandiri.
+                </p>
+                <button type="button" onClick={handleGenerateLink} disabled={linkLoading}
+                  className="px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-hover transition-colors disabled:opacity-50">
+                  {linkLoading ? 'Membuat...' : '+ Generate Link Booking'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Link display */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Link Booking</p>
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-sm font-mono text-gray-700 flex-1 truncate">
+                      {process.env.NEXT_PUBLIC_APP_URL}/booking/{bookingLink.slug}
+                    </p>
+                    <button type="button" onClick={handleCopyLink}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
+                      {linkCopied ? <><Check size={12} className="text-emerald-500" /> Tersalin</> : <><Copy size={12} /> Salin</>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Toggle + QR */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <button type="button" onClick={handleToggleLink} disabled={linkLoading}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 ${
+                      bookingLink.is_active
+                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}>
+                    {bookingLink.is_active
+                      ? <><ToggleRight size={16} /> Aktif</>
+                      : <><ToggleLeft size={16} /> Nonaktif</>}
+                  </button>
+                  <a href={`/booking/${bookingLink.slug}`} target="_blank" rel="noreferrer"
+                    className="text-xs font-bold text-primary hover:underline">
+                    Buka halaman →
+                  </a>
+                </div>
+
+                {/* QR Code */}
+                {bookingLink.is_active && (
+                  <div className="border border-gray-100 rounded-xl p-4">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">QR Code</p>
+                    <div className="flex items-start gap-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL}/booking/${bookingLink.slug}`)}`}
+                        alt="QR Code"
+                        className="w-28 h-28 rounded-xl border border-gray-200"
+                      />
+                      <div className="text-xs text-gray-500 pt-1">
+                        <p className="font-bold text-gray-700 mb-1">Share QR ini ke pasien:</p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          <li>Print & pasang di meja receptionist</li>
+                          <li>Share di media sosial klinik</li>
+                          <li>Kirim ke pasien via WhatsApp</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <button type="submit" disabled={saving}

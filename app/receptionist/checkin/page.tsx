@@ -6,9 +6,11 @@ import Link from 'next/link'
 
 type Appointment = {
   id: string; scheduled_at: string; status: string; complaint: string | null; queue_number: number | null
+  source?: string; booking_code?: string | null
   patients: { id: string; full_name: string; no_rm: string; phone: string | null } | null
   doctors:  { id: string; full_name: string; specialty: string } | null
 }
+type TabType = 'regular' | 'self_booking'
 type Doctor   = { id: string; full_name: string; specialty: string }
 type Patient  = { id: string; full_name: string; no_rm: string; phone: string | null }
 
@@ -25,6 +27,9 @@ export default function CheckInPage() {
   const [search,       setSearch]       = useState('')
   const [toast,        setToast]        = useState<string | null>(null)
   const [checkinResult, setCheckinResult] = useState<{ name: string; queue: number } | null>(null)
+  const [tab,          setTab]          = useState<TabType>('regular')
+  const [selfBookings, setSelfBookings] = useState<Appointment[]>([])
+  const [sbLoading,    setSbLoading]    = useState(false)
 
   // Walk-in modal
   const [showWalkin,   setShowWalkin]   = useState(false)
@@ -44,7 +49,16 @@ export default function CheckInPage() {
     setLoading(false)
   }, [])
 
+  const loadSelfBookings = useCallback(async () => {
+    setSbLoading(true)
+    const res = await fetch('/api/receptionist/checkin?source=self_booking')
+    const d   = await res.json() as { appointments?: Appointment[] }
+    setSelfBookings(d.appointments ?? [])
+    setSbLoading(false)
+  }, [])
+
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (tab === 'self_booking') loadSelfBookings() }, [tab, loadSelfBookings])
 
   useEffect(() => {
     if (!showWalkin) return
@@ -146,6 +160,78 @@ export default function CheckInPage() {
         </button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5">
+        {([
+          { id: 'regular',      label: 'Appointment' },
+          { id: 'self_booking', label: '🔗 Self-Booking' },
+        ] as { id: TabType; label: string }[]).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.id ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Self-Booking Tab */}
+      {tab === 'self_booking' && (
+        <div>
+          {sbLoading ? (
+            <div className="py-12 text-center text-muted-foreground text-sm">Memuat...</div>
+          ) : selfBookings.length === 0 ? (
+            <div className="bg-white rounded-2xl p-10 text-center border border-gray-100 text-sm text-muted-foreground">
+              Tidak ada self-booking hari ini
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {selfBookings.map(a => (
+                <div key={a.id} className="bg-white rounded-2xl p-5 border border-primary/20 shadow-sm">
+                  <div className="flex items-start gap-4 flex-wrap mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="font-black text-secondary">{(a.patients as any)?.full_name}</p>
+                        {a.booking_code && (
+                          <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
+                            {a.booking_code}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {(a.patients as any)?.no_rm} · {(a.patients as any)?.phone ?? '—'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {fmtTime(a.scheduled_at)} · {(a.doctors as any)?.full_name}
+                        {a.complaint && ` · ${a.complaint}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleCheckIn(a)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors">
+                      <UserCheck size={14} /> Konfirmasi Hadir
+                    </button>
+                    <button onClick={async () => {
+                      await fetch('/api/receptionist/queue', {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ appointment_id: a.id, status: 'batal' }),
+                      })
+                      showToast('Booking dibatalkan')
+                      loadSelfBookings()
+                    }}
+                      className="flex-1 py-2.5 bg-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors">
+                      Batalkan
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Regular Appointment Tab */}
+      {tab === 'regular' && <>
+
       {/* Search */}
       <div className="relative mb-5">
         <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -218,6 +304,8 @@ export default function CheckInPage() {
           )}
         </div>
       )}
+
+      </>}
 
       {/* Walk-in Modal */}
       {showWalkin && (
