@@ -233,7 +233,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-3 mb-5">
+            <div className="flex flex-wrap gap-3 mb-4">
               <button
                 type="button"
                 onClick={handleTestWA}
@@ -252,6 +252,16 @@ export default function SettingsPage() {
                 <Bell size={14} />
                 {bulkLoading ? 'Mengirim...' : 'Kirim Reminder Besok'}
               </button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <p className="text-sm font-bold text-blue-700">Reminder Otomatis Aktif</p>
+              </div>
+              <p className="text-xs text-blue-600">
+                WA reminder dikirim otomatis setiap hari pukul 18.00 WIB kepada pasien yang memiliki appointment besok.
+              </p>
             </div>
 
             {testResult && (

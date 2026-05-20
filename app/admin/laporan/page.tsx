@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import TopBar from '@/components/TopBar'
-import { BarChart3, Users, CheckCircle, XCircle, TrendingUp, DollarSign, Clock } from 'lucide-react'
+import { BarChart3, Users, CheckCircle, XCircle, TrendingUp, DollarSign, Clock, Download, FileSpreadsheet, X } from 'lucide-react'
 
 function fmtRupiah(n: number) {
   if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1).replace('.0', '')}jt`
@@ -22,11 +22,21 @@ type Data = {
   byDoctor: { doctor_id: string; full_name: string; specialty: string; total: number; selesai: number; menunggu: number }[]
   byPenjamin?: Record<string, number>
 }
+type Notif = { id: string; type: string; status: string; created_at: string }
 
 export default function LaporanPage() {
   const [mode, setMode] = useState<'today' | 'month'>('today')
   const [data, setData] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exporting,       setExporting]       = useState(false)
+  const [exportType,      setExportType]      = useState('all')
+  const [exportPeriod,    setExportPeriod]    = useState<'today' | 'month' | 'custom'>('month')
+  const [exportFrom,      setExportFrom]      = useState('')
+  const [exportTo,        setExportTo]        = useState('')
+  const [exportFormat,    setExportFormat]    = useState('excel')
+  const [notifs,          setNotifs]          = useState<Notif[]>([])
 
   useEffect(() => {
     setLoading(true)
@@ -36,26 +46,67 @@ export default function LaporanPage() {
       .catch(() => setLoading(false))
   }, [mode])
 
+  useEffect(() => {
+    fetch('/api/admin/notifications')
+      .then(r => r.json())
+      .then(d => setNotifs(d.notifications ?? []))
+      .catch(() => {})
+  }, [])
+
+  async function doExport(fmt = exportFormat, typ = exportType, period = exportPeriod) {
+    setExporting(true)
+    try {
+      const params = new URLSearchParams({ format: fmt, type: typ, mode: period })
+      if (period === 'custom') {
+        if (exportFrom) params.set('date_from', exportFrom)
+        if (exportTo)   params.set('date_to', exportTo)
+      }
+      const res  = await fetch(`/api/admin/laporan/export?${params}`)
+      const blob = await res.blob()
+      const a    = document.createElement('a')
+      a.href     = URL.createObjectURL(blob)
+      a.download = `laporan.${fmt === 'excel' ? 'xlsx' : 'csv'}`
+      a.click()
+    } catch { /* silent */ }
+    setExporting(false)
+  }
+
   const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const todayStr = new Date().toISOString().split('T')[0]
+  const todayNotifs = notifs.filter(n => n.created_at.startsWith(todayStr))
+  const nSent    = todayNotifs.filter(n => n.status === 'sent').length
+  const nFailed  = todayNotifs.filter(n => n.status === 'failed').length
+  const nPending = todayNotifs.filter(n => n.status === 'pending').length
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <TopBar title="Laporan" subtitle="Rekap kinerja klinik" showSearch={false} />
       <div className="p-8">
 
         {/* Mode toggle */}
-        <div className="flex items-center justify-between mb-7">
+        <div className="flex items-center justify-between mb-7 flex-wrap gap-3">
           <div>
             <h2 className="text-xl font-black text-secondary">{mode === 'today' ? 'Laporan Hari Ini' : 'Laporan Bulan Ini'}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">{today}</p>
           </div>
-          <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1 shadow-sm">
-            {(['today', 'month'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${mode === m ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-secondary'}`}>
-                {m === 'today' ? 'Hari Ini' : 'Bulan Ini'}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1 shadow-sm">
+              {(['today', 'month'] as const).map(m => (
+                <button key={m} onClick={() => setMode(m)}
+                  className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${mode === m ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-secondary'}`}>
+                  {m === 'today' ? 'Hari Ini' : 'Bulan Ini'}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => doExport('csv', 'all', mode)} disabled={exporting}
+              className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors disabled:opacity-50">
+              <Download size={14} /> CSV
+            </button>
+            <button onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-bold transition-colors">
+              <FileSpreadsheet size={14} /> Excel
+            </button>
           </div>
         </div>
 
@@ -217,6 +268,18 @@ export default function LaporanPage() {
               </div>
             )}
 
+            {/* WA Notification Stats */}
+            {todayNotifs.length > 0 && (
+              <div className="flex items-center gap-4 mb-7 flex-wrap">
+                <p className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Notifikasi Terkirim Hari Ini</p>
+                <div className="flex gap-3">
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold">✅ Terkirim: {nSent}</span>
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold">❌ Gagal: {nFailed}</span>
+                  {nPending > 0 && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold">⏳ Pending: {nPending}</span>}
+                </div>
+              </div>
+            )}
+
             {/* Per Dokter */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="flex items-center gap-3 p-6 border-b border-gray-100">
@@ -263,5 +326,80 @@ export default function LaporanPage() {
         )}
       </div>
     </div>
+
+    {/* Export Modal */}
+    {showExportModal && (
+      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowExportModal(false)}>
+        <div className="bg-white rounded-2xl p-7 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-black text-gray-900 text-lg">Export Laporan</h3>
+            <button onClick={() => setShowExportModal(false)}><X size={16} className="text-gray-500" /></button>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">Tipe Data</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: 'appointments', label: 'Appointment' },
+                { value: 'revenue',      label: 'Pendapatan'  },
+                { value: 'medicines',    label: 'Stok Obat'   },
+                { value: 'shifts',       label: 'Absensi'     },
+                { value: 'all',          label: 'Semua'       },
+              ].map(opt => (
+                <button key={opt.value} onClick={() => setExportType(opt.value)}
+                  className={`py-2 rounded-xl text-xs font-bold border-2 transition-all ${exportType === opt.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">Periode</p>
+            <div className="flex gap-2 mb-2">
+              {([
+                { value: 'today', label: 'Hari Ini' },
+                { value: 'month', label: 'Bulan Ini' },
+                { value: 'custom', label: 'Custom' },
+              ] as const).map(p => (
+                <button key={p.value} onClick={() => setExportPeriod(p.value)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all ${exportPeriod === p.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {exportPeriod === 'custom' && (
+              <div className="grid grid-cols-2 gap-2">
+                <input type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)}
+                  className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                <input type="date" value={exportTo} onChange={e => setExportTo(e.target.value)}
+                  className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+            )}
+          </div>
+
+          <div className="mb-5">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">Format</p>
+            <div className="flex gap-2">
+              {['excel', 'csv'].map(f => (
+                <button key={f} onClick={() => setExportFormat(f)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${exportFormat === f ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                  {f === 'excel' ? '📊 Excel' : '📄 CSV'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => { setShowExportModal(false); doExport(exportFormat, exportType, exportPeriod) }}
+            disabled={exporting}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Download size={14} /> {exporting ? 'Mengunduh...' : 'Download'}
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
