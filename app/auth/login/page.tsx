@@ -2,15 +2,15 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowRight, Sparkles, Building2 } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Loader2, Sparkles } from 'lucide-react'
 
-function DemoButton() {
+// ─── Demo Banner (di bawah login card) ───────────────────────────
+function DemoBanner() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
   async function handleDemo() {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const res  = await fetch('/api/demo-clinic-login', { method: 'POST' })
       const data = await res.json()
@@ -27,30 +27,22 @@ function DemoButton() {
   }
 
   return (
-    <div className="bg-[#F3FBF5] border border-[#E4F8EA] rounded-[24px] p-6 mb-8 animate-fade-up">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-green-500 text-white flex items-center justify-center shadow-sm">
-          <Sparkles size={16} />
+    <div className="mt-4 bg-white rounded-2xl border border-black/[0.05] px-5 py-4 apple-shadow animate-fade-up">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Sparkles size={14} className="text-green-500 flex-shrink-0" />
+          <p className="text-[13px] text-gray-500 font-medium">Ingin coba platform dulu tanpa daftar?</p>
         </div>
-        <span className="text-[11px] font-bold text-green-600 uppercase tracking-widest">Akses Uji Coba</span>
+        <button
+          onClick={handleDemo}
+          disabled={loading}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 text-[12px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-black/[0.07] rounded-xl transition-all disabled:opacity-50 flex-shrink-0"
+        >
+          {loading ? <Loader2 size={12} className="animate-spin" /> : null}
+          {loading ? 'Menyiapkan...' : 'Coba Demo Klinik →'}
+        </button>
       </div>
-      <h2 className="text-xl sf-display-heavy text-gray-900 mb-1">Coba Demo Admin Klinik</h2>
-      <p className="text-sm text-green-700/70 mb-5 leading-relaxed">Eksplorasi semua fitur manajemen klinik tanpa perlu membuat akun.</p>
-      <button
-        onClick={handleDemo}
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1D1D1F] hover:bg-black text-white font-bold rounded-2xl transition-all active:scale-[0.98] disabled:opacity-60 shadow-lg"
-      >
-        {loading ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            Menyiapkan Sesi...
-          </>
-        ) : (
-          <>Mulai Demo Sekarang <ArrowRight size={16} /></>
-        )}
-      </button>
-      {error && <p className="text-xs text-red-500 mt-2 font-medium">{error}</p>}
+      {error && <p className="text-[11px] text-red-500 mt-2 font-medium">{error}</p>}
     </div>
   )
 }
@@ -85,13 +77,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-6 relative overflow-hidden">
-      
+
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-100/50 rounded-full blur-3xl -mr-64 -mt-64 opacity-60 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-100/30 rounded-full blur-3xl -ml-32 -mb-32 opacity-40 pointer-events-none" />
 
       <div className="w-full max-w-[440px] relative z-10 animate-fade-in">
-        
+
         {/* Branding Header */}
         <div className="text-center mb-10">
           <a href="https://ja-landingpage-platform.vercel.app" className="inline-flex items-center gap-3 group mb-4">
@@ -109,16 +101,8 @@ export default function LoginPage() {
           </a>
         </div>
 
-        {/* Login Container (Apple Card) */}
+        {/* Login Card */}
         <div className="bg-white rounded-[32px] p-8 md:p-10 apple-shadow border border-black/[0.03]">
-          
-          <DemoButton />
-
-          <div className="relative flex items-center gap-4 mb-8">
-            <div className="flex-1 h-px bg-gray-100" />
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Atau Masuk Akun</span>
-            <div className="flex-1 h-px bg-gray-100" />
-          </div>
 
           {error && (
             <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl p-4 mb-6 animate-shake">
@@ -187,25 +171,24 @@ export default function LoginPage() {
           <div className="mt-8 text-center pt-6 border-t border-black/5">
             <p className="text-sm text-gray-500">
               Butuh bantuan akses?{' '}
-              <a
-                href="https://wa.me/6281296917963"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-apple-blue hover:text-blue-700 transition-colors"
-              >
+              <a href="https://wa.me/6281296917963" target="_blank" rel="noopener noreferrer" className="font-bold text-apple-blue hover:text-blue-700 transition-colors">
                 Hubungi Support
               </a>
             </p>
           </div>
         </div>
 
-        <div className="mt-8 text-center space-y-4">
-            <p className="text-[12px] text-gray-400 font-medium">
-                Belum punya sistem untuk klinik Anda? <a href="/register" className="text-apple-blue font-bold hover:underline">Coba Gratis 14 Hari</a>
-            </p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
-                © {new Date().getFullYear()} Japan Arena Corp
-            </p>
+        {/* Demo Banner — di bawah login card */}
+        <DemoBanner />
+
+        <div className="mt-6 text-center space-y-3">
+          <p className="text-[12px] text-gray-400 font-medium">
+            Belum punya sistem untuk klinik Anda?{' '}
+            <a href="/register" className="text-apple-blue font-bold hover:underline">Coba Gratis 14 Hari</a>
+          </p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
+            © {new Date().getFullYear()} Japan Arena Corp
+          </p>
         </div>
 
       </div>
