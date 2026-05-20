@@ -39,35 +39,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Role tidak valid.' }, { status: 400 })
     }
 
-    const cfg  = ROLE_CONFIG[role as DemoRole]
-    const db   = createAdminClient()
+    const cfg = ROLE_CONFIG[role as DemoRole]
+    const db  = createAdminClient()
 
-    // 1. Pastikan demo clinic ada dan data sudah di-seed
+    // 1. Pastikan demo clinic ada
     const clinicId = await getOrCreateDemoClinic(db)
     if (!clinicId) {
       return NextResponse.json({ error: 'Gagal menyiapkan klinik demo.' }, { status: 500 })
     }
-    await seedDemoData(db, clinicId)
 
-    // 2. Cari atau buat auth user untuk role ini
-    const { data: authList } = await db.auth.admin.listUsers()
-    const existAuth = authList?.users?.find(u => u.email === cfg.email)
+    // 2. Seed data demo — hanya jika belum ada dokter (idempotent check ringan)
+    //    Seed berjalan di background agar tidak memblok response
+    const { count: doctorCount } = await db
+      .from('doctors')
+      .select('*', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+
+    if (!doctorCount || doctorCount === 0) {
+      // Seed hanya pertama kali — tidak block, biarkan selesai sendiri
+      void seedDemoData(db, clinicId).catch(e =>
+        console.error('[demo-switch] seed error (non-fatal):', e)
+      )
+    }
+
+    // 3. Cari atau buat auth user — pakai query DB langsung, bukan listUsers()
+    //    (listUsers() hanya ambil 50 user pertama, rentan miss existing user)
+    const { data: existingProfile } = await db
+      .from('users')
+      .select('id')
+      .eq('email', cfg.email)
+      .maybeSingle()
 
     let userId: string
-    if (existAuth) {
-      userId = existAuth.id
+
+    if (existingProfile?.id) {
+      userId = existingProfile.id
     } else {
       const { data: newAuth, error: authErr } = await db.auth.admin.createUser({
         email: cfg.email, password: DEMO_PASS, email_confirm: true,
       })
       if (authErr || !newAuth?.user) {
-        return NextResponse.json({ error: 'Gagal buat akun demo: ' + authErr?.message }, { status: 500 })
+        return NextResponse.json(
+          { error: 'Gagal buat akun demo: ' + (authErr?.message ?? 'unknown') },
+          { status: 500 }
+        )
       }
       userId = newAuth.user.id
     }
 
-    // 3. Upsert profil di public.users
-    await db.from('users').upsert({
+    // 4. Upsert profil
+    const { error: upsertErr } = await db.from('users').upsert({
       id        : userId,
       email     : cfg.email,
       full_name : cfg.name,
@@ -76,7 +97,11 @@ export async function POST(req: NextRequest) {
       clinic_id : clinicId,
     }, { onConflict: 'id' })
 
-    // 4. Setup role-specific records (idempotent)
+    if (upsertErr) {
+      return NextResponse.json({ error: 'Gagal simpan profil: ' + upsertErr.message }, { status: 500 })
+    }
+
+    // 5. Setup role-specific records (idempotent)
     if (role === 'doctor') {
       const { data: existDoc } = await db.from('doctors')
         .select('id').eq('clinic_id', clinicId).eq('user_id', userId).maybeSingle()
@@ -101,7 +126,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Sign in
+    // 6. Sign in
     const supabase = await createClient()
     const { error: signInErr } = await supabase.auth.signInWithPassword({
       email: cfg.email, password: DEMO_PASS,
