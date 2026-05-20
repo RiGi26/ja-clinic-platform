@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { DollarSign, Check, ChevronDown, Download, Send, Plus, X, BookOpen, Pencil } from 'lucide-react'
 import TreatmentPicker, { type Treatment } from '@/components/TreatmentPicker'
 
@@ -47,6 +48,7 @@ export default function BillingClient({ initial, summary }: {
     countPending: number; countPaid: number; total: number
   }
 }) {
+  const router = useRouter()
   const [bills, setBills]           = useState<Bill[]>(initial)
   const [payModal, setPayModal]     = useState<string | null>(null)
   const [payMethod, setPayMethod]   = useState('cash')
@@ -172,7 +174,7 @@ export default function BillingClient({ initial, summary }: {
       if (res.ok) {
         setShowCreate(false)
         resetCreateForm()
-        window.location.reload()
+        router.refresh()
       } else {
         setCreateError(data.error ?? 'Gagal membuat tagihan')
       }
@@ -227,7 +229,7 @@ export default function BillingClient({ initial, summary }: {
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(patientName)} flex items-center justify-center text-white font-black text-base flex-shrink-0`}>
                     {patientName.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
                   </div>
-                  <div className="flex-1 grid grid-cols-5 gap-4 items-center">
+                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 items-center">
                     <div>
                       <p className="font-black text-secondary text-sm">{patientName}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{noRM}</p>

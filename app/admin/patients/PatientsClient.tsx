@@ -79,7 +79,7 @@ export default function PatientsClient({ patients }: { patients: Patient[] }) {
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(p.full_name)} flex items-center justify-center text-white font-black text-base flex-shrink-0`}>
                     {p.full_name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
                   </div>
-                  <div className="flex-1 grid grid-cols-4 gap-4 items-center">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-center">
                     <div className="col-span-2">
                       <p className="font-black text-secondary text-sm">{p.full_name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{p.no_rm} · {calcAge(p.date_of_birth)} · {p.gender ?? '—'}</p>

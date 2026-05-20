@@ -87,7 +87,7 @@ export default function AppointmentsClient({ initial }: { initial: Apt[] }) {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari nama, No.RM, dokter..."
-              className="pl-11 pr-5 py-3 bg-white border border-gray-200 rounded-xl w-72 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" />
+              className="pl-11 pr-5 py-3 bg-white border border-gray-200 rounded-xl w-full sm:w-72 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" />
           </div>
           <Link href="/admin/appointments/walkin"
             className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-sm hover:bg-primary-hover transition-colors">
