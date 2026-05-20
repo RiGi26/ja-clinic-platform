@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  LayoutDashboard, UserCheck, List, UserPlus, Receipt,
+  LayoutDashboard, UserCheck, List, UserPlus, Receipt, Pill,
   ChevronLeft, LogOut,
 } from 'lucide-react'
 
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/receptionist/checkin',        Icon: UserCheck,       label: 'Check-in Pasien'   },
   { href: '/receptionist/antrian',        Icon: List,            label: 'Kelola Antrian'    },
   { href: '/receptionist/patients/new',   Icon: UserPlus,        label: 'Pasien Baru'       },
+  { href: '/receptionist/dispensing',     Icon: Pill,            label: 'Obat & Resep'      },
   { href: '/receptionist/billing',        Icon: Receipt,         label: 'Billing'           },
 ]
 

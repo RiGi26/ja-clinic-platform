@@ -8,7 +8,8 @@ type CompletedApt = {
   patients: { id: string; full_name: string; no_rm: string; phone: string | null } | null
   doctors:  { full_name: string; consultation_fee?: number } | null
 }
-type BillRecord = { id: string; invoice_number: string; total: number; status: string; appointment_id: string | null }
+type BillRecord    = { id: string; invoice_number: string; total: number; status: string; appointment_id: string | null }
+type PrescriptionInfo = { id: string; status: string; total_price: number } | null
 
 const INPUT = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
 const LABEL = 'text-[10px] uppercase tracking-widest font-bold text-muted-foreground block mb-2'
@@ -32,6 +33,8 @@ export default function ReceptionistBillingPage() {
   const [toast,        setToast]        = useState<string | null>(null)
 
   const [billingModal, setBillingModal] = useState<CompletedApt | null>(null)
+  const [presInfo,     setPresInfo]     = useState<PrescriptionInfo>(null)
+  const [loadingPres,  setLoadingPres]  = useState(false)
   const [payMethod,    setPayMethod]    = useState('cash')
   const [amount,       setAmount]       = useState('')
   const [discount,     setDiscount]     = useState('')
@@ -62,11 +65,24 @@ export default function ReceptionistBillingPage() {
 
   const billedIds = new Set(bills.map(b => b.appointment_id))
 
-  function openBilling(apt: CompletedApt) {
+  async function openBilling(apt: CompletedApt) {
     const fee = (apt.doctors as any)?.consultation_fee ?? 0
-    setAmount(String(fee))
-    setDiscount(''); setNotes(''); setPayMethod('cash')
-    setBillingModal(apt)
+    setAmount(String(fee)); setDiscount(''); setNotes(''); setPayMethod('cash')
+    setBillingModal(apt); setPresInfo(null)
+    setLoadingPres(true)
+    try {
+      const res = await fetch(`/api/receptionist/prescription-for-apt?appointment_id=${apt.id}`)
+      const d   = await res.json() as { prescription?: any }
+      if (d.prescription) {
+        const total = (d.prescription.prescription_items ?? []).reduce((sum: number, item: any) =>
+          sum + item.quantity * (item.medicines?.price ?? 0), 0)
+        setPresInfo({ id: d.prescription.id, status: d.prescription.status, total_price: total })
+        if (d.prescription.status === 'dispensed' && total > 0) {
+          setAmount(String(fee + total))
+        }
+      }
+    } catch { /* ignore */ }
+    setLoadingPres(false)
   }
 
   async function handleCreateBilling() {
@@ -216,6 +232,16 @@ export default function ReceptionistBillingPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Prescription info */}
+              {!loadingPres && presInfo && (
+                <div className={`rounded-xl p-3 text-sm ${presInfo.status === 'dispensed' ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}`}>
+                  {presInfo.status === 'dispensed'
+                    ? <p className="text-emerald-700 font-bold">✅ Obat: {fmtRupiah(presInfo.total_price)} (sudah dikeluarkan, auto-included)</p>
+                    : <p className="text-amber-700 font-bold">⚠️ Resep belum dikeluarkan — harga obat belum dihitung</p>
+                  }
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

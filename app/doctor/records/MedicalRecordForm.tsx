@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import TopBar from '@/components/TopBar'
 import { Plus, X, CheckCircle, AlertTriangle, Tag, Clock } from 'lucide-react'
+import PrescriptionForm from '@/components/PrescriptionForm'
 
 const INPUT = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white'
 const LABEL = 'text-[10px] uppercase tracking-widest font-bold text-muted-foreground block mb-2'
@@ -124,10 +125,11 @@ function LetterQuickSection({ patientId, appointmentId, diagnosis }: {
   )
 }
 
-export default function MedicalRecordForm({ appointment, patient, history }: {
-  appointment: { id: string; complaint: string | null }
+export default function MedicalRecordForm({ appointment, patient, history, clinicId }: {
+  appointment: { id: string; complaint: string | null; status?: string }
   patient: Patient
   history: HistoryItem[]
+  clinicId?: string
 }) {
   const router = useRouter()
   const [pending, startTrans] = useTransition()
@@ -506,6 +508,14 @@ export default function MedicalRecordForm({ appointment, patient, history }: {
               appointmentId={appointment.id}
               diagnosis={soapAssessment}
             />
+
+            {/* Resep Obat */}
+            {saved && (
+              <PrescriptionForm
+                appointmentId={appointment.id}
+                patientId={patient.id}
+              />
+            )}
           </div>
 
           {/* Patient sidebar */}

@@ -29,6 +29,7 @@ export default function LaporanPage() {
   const [data, setData] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const [prescStats,      setPrescStats]      = useState<{ confirmed: number; dispensed: number } | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [exporting,       setExporting]       = useState(false)
   const [exportType,      setExportType]      = useState('all')
@@ -50,6 +51,16 @@ export default function LaporanPage() {
     fetch('/api/admin/notifications')
       .then(r => r.json())
       .then(d => setNotifs(d.notifications ?? []))
+      .catch(() => {})
+    fetch('/api/receptionist/dispensing')
+      .then(r => r.json())
+      .then(d => {
+        const list = d.prescriptions ?? []
+        setPrescStats({
+          confirmed:  list.filter((p: any) => p.status === 'confirmed').length,
+          dispensed:  list.filter((p: any) => p.status === 'dispensed').length,
+        })
+      })
       .catch(() => {})
   }, [])
 
@@ -264,6 +275,17 @@ export default function LaporanPage() {
                       </div>
                     )
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Prescription Stats */}
+            {prescStats && (prescStats.confirmed + prescStats.dispensed) > 0 && (
+              <div className="flex items-center gap-4 mb-5 flex-wrap">
+                <p className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Resep Hari Ini</p>
+                <div className="flex gap-3">
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold">📋 Dikonfirmasi: {prescStats.confirmed}</span>
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold">✅ Dispensed: {prescStats.dispensed}</span>
                 </div>
               </div>
             )}
