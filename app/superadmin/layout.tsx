@@ -21,7 +21,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
   return (
     <div className="h-screen flex overflow-hidden bg-bg text-text">
       <SuperAdminClientLayout userName={profile.full_name}>
-        <div className="p-6 md:p-10 w-full max-w-7xl mx-auto animate-fade-in">
+        <div className="pt-16 px-5 pb-5 md:p-10 w-full max-w-7xl mx-auto animate-fade-in">
           {children}
         </div>
       </SuperAdminClientLayout>

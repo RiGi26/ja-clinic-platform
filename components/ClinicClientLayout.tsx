@@ -40,7 +40,7 @@ export default function ClinicClientLayout({ children, role, userName, userSub }
           mounted && isCollapsed ? 'md:ml-20' : 'md:ml-64'
         } w-full`}
       >
-        <div className="p-6 md:p-10 w-full max-w-7xl mx-auto animate-fade-in">
+        <div className="pt-16 px-5 pb-5 md:p-10 w-full max-w-7xl mx-auto animate-fade-in">
           {children}
         </div>
       </main>
