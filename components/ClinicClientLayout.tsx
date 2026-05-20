@@ -5,7 +5,7 @@ import ClinicSidebar from './ClinicSidebar'
 
 interface ClinicClientLayoutProps {
   children: ReactNode
-  role: 'admin' | 'doctor' | 'patient'
+  role: 'admin' | 'doctor' | 'patient' | 'receptionist'
   userName: string
   userSub?: string
 }
