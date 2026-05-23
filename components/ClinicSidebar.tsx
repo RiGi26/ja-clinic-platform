@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
   ClipboardList, BarChart3, Tag, FileCheck, Pill, CalendarCheck, ChevronRight,
-  UserCheck, List, UserPlus, Receipt, Menu, X,
+  UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -246,7 +246,15 @@ export default function ClinicSidebar({ role, userName, userSub, isCollapsed, se
         </nav>
 
         {/* Profile & Logout */}
-        <div className="p-4 border-t border-black/5 bg-white/50 shrink-0">
+        <div className="p-4 border-t border-black/5 bg-white/50 shrink-0 space-y-1">
+          <a 
+            href="https://ja-landingpage-platform.vercel.app"
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-4'} py-2 rounded-lg text-[11px] font-bold text-gray-400 hover:bg-black/5 hover:text-gray-900 transition-all`}
+            title={isCollapsed ? 'Portal Utama' : undefined}
+          >
+            <LayoutGrid size={14} />
+            {!isCollapsed && <span>Portal Utama</span>}
+          </a>
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''} p-2 hover:bg-black/5 rounded-xl transition-colors relative mb-2`}>
             <div className="w-10 h-10 rounded-full bg-white border border-black/10 overflow-hidden shrink-0 shadow-sm flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
               <span className="text-sm font-bold text-gray-600">{getInitials(userName)}</span>
