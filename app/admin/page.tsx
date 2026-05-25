@@ -87,34 +87,34 @@ export default async function AdminDashboardPage() {
     <div className="space-y-10 animate-fade-in">
       
       {/* ─── Header Section (Apple Style) ────────────────────────────────── */}
-      <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
+      <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 px-1">
         <div>
-          <p className="text-[12px] text-gray-500 mb-1.5 font-bold uppercase tracking-widest flex items-center gap-2 sf-display">
+          <p className="text-[10px] md:text-[12px] text-gray-500 mb-1.5 font-bold uppercase tracking-widest flex items-center gap-2 sf-display">
             <span className="w-2 h-2 rounded-full bg-green-500"></span>
             System Operational • {today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
           </p>
-          <h2 className="text-[40px] sf-display-heavy tracking-tight text-[#1D1D1F] leading-tight">
+          <h2 className="text-[32px] md:text-[40px] sf-display-heavy tracking-tight text-[#1D1D1F] leading-tight text-mobile-balance">
             Dashboard Admin.
           </h2>
         </div>
         
         <div className="flex gap-3">
           <Link href="/admin/appointments/walkin"
-            className="bg-[#1D1D1F] text-white px-6 py-3 rounded-full text-sm sf-display-heavy shadow-lg hover:bg-black transition-all hover:-translate-y-0.5 flex items-center gap-2">
+            className="bg-[#1D1D1F] text-white px-6 py-4 md:py-3 rounded-2xl md:rounded-full text-sm sf-display-heavy shadow-lg hover:bg-black transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 w-full md:w-auto">
             <Users size={16} /> Daftarkan Pasien
           </Link>
         </div>
       </header>
 
       {/* ─── Stats Row (Rounded Apple) ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map(s => (
           <div key={s.label} className="bg-white rounded-[32px] p-6 apple-shadow border border-black/[0.03] group hover:scale-[1.02] transition-all">
             <div className={`w-12 h-12 rounded-2xl ${s.color} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
               <s.Icon size={20} />
             </div>
             <p className="text-gray-400 text-[11px] uppercase tracking-widest font-bold mb-1">{s.label}</p>
-            <p className="text-[#1D1D1F] text-3xl sf-display-heavy tabular-nums leading-none">{s.value}</p>
+            <p className="text-[#1D1D1F] text-2xl md:text-3xl sf-display-heavy tabular-nums leading-none">{s.value}</p>
           </div>
         ))}
       </div>
@@ -148,30 +148,30 @@ export default async function AdminDashboardPage() {
                 
                 return (
                   <div key={apt.id}
-                    className="bg-white rounded-[24px] p-5 apple-shadow apple-shadow-hover border border-black/[0.02] flex items-center justify-between group"
+                    className="bg-white rounded-[24px] p-5 apple-shadow apple-shadow-hover border border-black/[0.02] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
                   >
-                    <div className="flex items-center gap-5 min-w-0">
-                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarGradient(patientName)} flex items-center justify-center text-white font-black text-lg flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                    <div className="flex items-center gap-4 md:gap-5 min-w-0">
+                      <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br ${avatarGradient(patientName)} flex items-center justify-center text-white font-black text-base md:text-lg flex-shrink-0 group-hover:scale-105 transition-transform`}>
                         {apt.queue_number ?? '—'}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="sf-display text-[17px] text-[#1D1D1F] truncate">{patientName}</p>
-                          <span className="text-[12px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded">{noRM}</span>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <p className="sf-display text-[16px] md:text-[17px] text-[#1D1D1F] truncate font-bold">{patientName}</p>
+                          <span className="text-[10px] md:text-[12px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded border border-black/[0.03]">{noRM}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-[13px] text-gray-500 font-medium">
-                          <span>{doctorName}</span>
-                          <span>•</span>
-                          <span>{time}</span>
+                        <div className="flex items-center gap-2 md:gap-3 text-[12px] md:text-[13px] text-gray-500 font-medium">
+                          <span className="truncate">{doctorName}</span>
+                          <span className="opacity-40">•</span>
+                          <span className="whitespace-nowrap font-bold text-gray-400">{time}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 shrink-0">
-                        <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide border-0 shadow-sm ${STATUS_STYLE[statusKey]}`}>
+                    <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-black/[0.03]">
+                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border-0 shadow-sm ${STATUS_STYLE[statusKey]}`}>
                             {STATUS_LABEL[statusKey]}
                         </span>
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-apple-blue group-hover:text-white transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-apple-blue group-hover:text-white transition-all active:scale-90">
                             <ArrowRight size={18} />
                         </div>
                     </div>
@@ -186,34 +186,34 @@ export default async function AdminDashboardPage() {
         <div className="lg:col-span-4 space-y-6">
           <h3 className="text-[20px] sf-display-heavy tracking-tight text-[#1D1D1F] px-1">Statistik Cepat</h3>
 
-          <div className="bg-[#1D1D1F] text-white rounded-[32px] p-8 apple-shadow relative overflow-hidden group">
+          <div className="bg-[#1D1D1F] text-white rounded-[32px] p-6 md:p-8 apple-shadow relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-apple-blue opacity-20 rounded-full blur-2xl group-hover:opacity-30 transition-opacity"></div>
-            <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2 relative z-10">Rating Klinik</p>
-            <p className="text-5xl sf-display-heavy text-white relative z-10">4.8</p>
-            <div className="flex gap-1 mt-4 relative z-10">
+            <p className="text-[10px] md:text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-2 relative z-10">Rating Klinik</p>
+            <p className="text-4xl md:text-5xl sf-display-heavy text-white relative z-10">4.8</p>
+            <div className="flex gap-1 mt-3 md:mt-4 relative z-10">
               {[1,2,3,4,5].map(i => (
-                <Star key={i} size={20} className="text-amber-400 fill-amber-400" />
+                <Star key={i} size={18} className="text-amber-400 fill-amber-400" />
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-6 relative z-10 font-medium">Berdasarkan 1.2k+ ulasan pasien</p>
+            <p className="text-[10px] md:text-xs text-gray-500 mt-5 md:mt-6 relative z-10 font-medium tracking-tight">Berdasarkan 1.2k+ ulasan pasien</p>
           </div>
 
-          <div className="bg-white rounded-[32px] p-7 apple-shadow border border-black/[0.03]">
+          <div className="bg-white rounded-[32px] p-6 md:p-7 apple-shadow border border-black/[0.03]">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <p className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-1">Dokter Aktif</p>
-                    <p className="text-4xl sf-display-heavy text-[#1D1D1F] tabular-nums">{activeDoctors ?? 0}</p>
+                    <p className="text-[10px] md:text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-1">Dokter Aktif</p>
+                    <p className="text-3xl md:text-4xl sf-display-heavy text-[#1D1D1F] tabular-nums">{activeDoctors ?? 0}</p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-apple-blue flex items-center justify-center">
-                    <GraduationCap size={24} />
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-blue-50 text-apple-blue flex items-center justify-center">
+                    <GraduationCap size={20} className="md:size-6" />
                 </div>
             </div>
             <div className="flex -space-x-3 overflow-hidden">
               {Array.from({ length: Math.min(activeDoctors ?? 0, 6) }).map((_, i) => (
-                <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-white flex-shrink-0 shadow-sm" />
+                <div key={i} className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-white flex-shrink-0 shadow-sm" />
               ))}
               {(activeDoctors ?? 0) > 6 && (
-                <div className="w-10 h-10 rounded-full bg-gray-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-400 flex-shrink-0">
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-400 flex-shrink-0">
                     +{(activeDoctors ?? 0) - 6}
                 </div>
               )}

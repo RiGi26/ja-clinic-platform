@@ -73,6 +73,27 @@ body {
 
   .sf-display { font-weight: 600; letter-spacing: -0.015em; }
   .sf-display-heavy { font-weight: 700; letter-spacing: -0.02em; }
+
+  /* ─── High Performance Skeleton (Pure CSS) ─── */
+  .skeleton {
+    @apply relative overflow-hidden bg-black/[0.03];
+  }
+  .skeleton::after {
+    @apply absolute inset-0;
+    content: "";
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: skeleton-shimmer 1.8s infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
 }
 
 /* ── Sidebar & Layout ── */
