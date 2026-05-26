@@ -149,7 +149,7 @@ export default function LoginPage() {
                     <Loader2 size={18} className="animate-spin" /> Mengotentikasi...
                   </span>
                 ) : (
-                  'Masuk ke Portal Klinik'
+                  'Login ke Portal Klinik'
                 )}
               </button>
             </div>
