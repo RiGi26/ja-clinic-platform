@@ -47,17 +47,20 @@ export default function ReceptionistSidebar({ userName }: { userName: string }) 
       style={{ background: 'linear-gradient(180deg, #0A2342 0%, #0f2d5c 60%, #1B4F8A 100%)' }}
     >
       {/* Brand */}
-      <div className={`border-b border-white/10 flex items-center h-[72px] ${collapsed ? 'justify-center px-2' : 'px-5'}`}>
-        <Link href="/receptionist" className="flex items-center gap-3">
-          <Image src="/images/Icon.png" alt="Clinic" width={48} height={48}
-            className="w-12 h-12 object-contain flex-shrink-0" priority />
-          {!collapsed && (
-            <div>
-              <p className="text-white font-black text-sm leading-tight tracking-tight">Clinic Platform</p>
-              <p className="text-white/40 text-[11px] font-medium mt-0.5">by Japan Arena Corp</p>
-            </div>
-          )}
-        </Link>
+      <div
+        className={`flex flex-col shrink-0 items-center justify-center border-b border-white/10 px-4 transition-all duration-300 ${collapsed ? 'h-16 py-3' : 'h-28 py-5'}`}
+      >
+        <img
+          src="/logo-rocket.png"
+          alt="Logo Webzoka"
+          className={`w-auto shrink-0 object-contain transition-all duration-300 ${collapsed ? 'h-8' : 'h-10'}`}
+        />
+        {!collapsed && (
+          <div className="min-w-0 animate-fade-in select-none text-center mt-2.5">
+            <p className="truncate text-sm font-bold tracking-tight text-white">Clinic Platform</p>
+            <p className="text-[10px] font-semibold tracking-wider text-white/40 uppercase mt-0.5">Portal Operasi</p>
+          </div>
+        )}
       </div>
 
       {/* Nav */}

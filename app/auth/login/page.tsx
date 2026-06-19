@@ -63,29 +63,12 @@ export default function LoginPage() {
       <div className="w-full max-w-[440px] relative z-10 animate-fade-in">
 
         {/* Branding Header */}
-        <div className="text-center mb-10">
-          <Link 
-            href="https://ja-landingpage-platform.vercel.app" 
-            className="inline-flex flex-col items-center group transition-all"
-            title="Kembali ke Portal Utama"
-          >
-            <div className="relative mb-4">
-              <Image
-                src="/images/Icon.png"
-                alt="Japan Arena Corp"
-                width={56} height={56}
-                className="w-14 h-14 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-500"
-                priority
-              />
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-[8px] px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none uppercase tracking-widest font-bold">
-                Beranda
-              </div>
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl sf-display-heavy tracking-tight text-gray-900 leading-none">Japan Arena</h1>
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Clinic Platform</p>
-            </div>
-          </Link>
+        <div className="text-center mb-10 flex flex-col items-center gap-3">
+          <img src="/logo-rocket.png" alt="Logo Webzoka" className="h-16 w-16 object-contain" />
+          <div className="text-center mt-2">
+            <h1 className="text-2xl sf-display-heavy tracking-tight text-gray-900 leading-none">Japan Arena</h1>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Clinic Platform</p>
+          </div>
         </div>
 
         {/* Login Card */}

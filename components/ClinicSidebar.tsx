@@ -248,19 +248,21 @@ export default function ClinicSidebar({ role, userName, userSub, isCollapsed, se
         </button>
 
         {/* Logo */}
-        <div className="px-6 pt-10 pb-6 flex items-center h-24 shrink-0 overflow-hidden">
-          <div className={`flex items-center gap-3 transition-all duration-500 ${isCollapsed ? 'opacity-0 -translate-x-10 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
-            <Image src="/images/Icon.png" alt="Japan Arena Logo" width={40} height={40} className="w-10 h-10 object-contain drop-shadow-sm" priority />
-            <div className="whitespace-nowrap">
-              <h1 className="text-xl sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Japan Arena</h1>
-              <div className="mt-1 bg-gradient-to-r from-[#0071E3] to-[#42A1FF] text-white text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-widest inline-block shadow-sm">
-                Clinic Platform
-              </div>
+        {/* Logo */}
+        <div
+          className={`flex flex-col shrink-0 items-center justify-center border-b border-black/5 px-4 transition-all duration-300 ${isCollapsed ? 'h-16 py-3' : 'h-28 py-5'}`}
+        >
+          <img
+            src="/logo-rocket.png"
+            alt="Logo Webzoka"
+            className={`w-auto shrink-0 object-contain transition-all duration-300 ${isCollapsed ? 'h-8' : 'h-10'}`}
+          />
+          {!isCollapsed && (
+            <div className="min-w-0 animate-fade-in select-none text-center mt-2.5">
+              <p className="truncate text-sm font-bold tracking-tight text-gray-900">Clinic Platform</p>
+              <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase mt-0.5">Portal Operasi</p>
             </div>
-          </div>
-          <div className={`absolute left-0 right-0 flex justify-center transition-all duration-500 ${isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-50 pointer-events-none'}`}>
-            <Image src="/images/Icon.png" alt="Logo" width={36} height={36} className="w-9 h-9 object-contain drop-shadow-sm" />
-          </div>
+          )}
         </div>
 
         {/* Nav */}
