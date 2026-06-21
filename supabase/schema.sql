@@ -164,6 +164,57 @@ CREATE TABLE IF NOT EXISTS public.prescriptions (
   created_at        TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT prescriptions_pkey PRIMARY KEY (id)
 );
+-- NB: prescriptions is shared by two systems. Migration 006 overloads it with the
+-- pharmacy/dispensing columns (appointment_id, patient_id, doctor_id, status,
+-- prescription_number) and relaxes the legacy NOT NULLs; migration 008 adds
+-- updated_at (the prescriptions_updated_at trigger expects it).
+
+-- 8a. Medicines (inventaris obat per klinik — System B pharmacy)
+CREATE TABLE IF NOT EXISTS public.medicines (
+  id           UUID    NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id    UUID    NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  name         TEXT    NOT NULL,
+  generic_name TEXT,
+  category     TEXT    NOT NULL DEFAULT 'obat'
+                       CHECK (category IN ('obat','vitamin','alkes','lainnya')),
+  unit         TEXT    NOT NULL DEFAULT 'tablet',
+  stock        INTEGER NOT NULL DEFAULT 0,
+  min_stock    INTEGER NOT NULL DEFAULT 10,
+  price        INTEGER NOT NULL DEFAULT 0,
+  description  TEXT,
+  is_active    BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT medicines_pkey PRIMARY KEY (id)
+);
+
+-- 8b. Prescription items (baris obat untuk resep System B)
+CREATE TABLE IF NOT EXISTS public.prescription_items (
+  id              UUID    NOT NULL DEFAULT gen_random_uuid(),
+  prescription_id UUID    NOT NULL REFERENCES public.prescriptions(id) ON DELETE CASCADE,
+  medicine_id     UUID    NOT NULL REFERENCES public.medicines(id),
+  quantity        INTEGER NOT NULL CHECK (quantity > 0),
+  dosage          TEXT    NOT NULL,
+  duration        TEXT,
+  notes           TEXT,
+  CONSTRAINT prescription_items_pkey PRIMARY KEY (id)
+);
+
+-- 8c. Medicine transactions (kartu stok / ledger — audit tiap mutasi stok).
+--     Mutations go through the atomic RPCs in migration 007, never raw UPDATEs.
+CREATE TABLE IF NOT EXISTS public.medicine_transactions (
+  id           UUID    NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id    UUID    NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  medicine_id  UUID    NOT NULL REFERENCES public.medicines(id),
+  type         TEXT    NOT NULL CHECK (type IN ('masuk','keluar','adjustment')),
+  quantity     INTEGER NOT NULL,
+  stock_before INTEGER NOT NULL,
+  stock_after  INTEGER NOT NULL,
+  reference    TEXT,
+  notes        TEXT,
+  created_by   UUID    REFERENCES public.users(id),
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT medicine_transactions_pkey PRIMARY KEY (id)
+);
 
 -- 9. Billing (tagihan / invoice)
 CREATE TABLE IF NOT EXISTS public.billing (
@@ -213,6 +264,9 @@ ALTER TABLE public.queue_sessions     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medical_records    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.prescriptions      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.medicines             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prescription_items    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.medicine_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.billing            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications      ENABLE ROW LEVEL SECURITY;
 
@@ -223,7 +277,8 @@ BEGIN
   FOREACH tbl IN ARRAY ARRAY[
     'clinics','users','doctors','patients','doctor_schedules',
     'queue_sessions','appointments','medical_records',
-    'prescriptions','billing','notifications'
+    'prescriptions','medicines','prescription_items','medicine_transactions',
+    'billing','notifications'
   ] LOOP
     EXECUTE format(
       'CREATE POLICY "service_role_bypass" ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true)',

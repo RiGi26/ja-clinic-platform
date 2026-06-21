@@ -51,56 +51,31 @@ export async function PATCH(request: Request) {
   const { prescription_id } = await request.json() as { prescription_id: string }
   const db = createAdminClient()
 
-  const { data: prescription } = await db
-    .from('prescriptions')
-    .select(`
-      id, status, patient_id,
-      prescription_items(id, quantity, medicine_id, medicines(id, name, stock, price, unit))
-    `)
-    .eq('id', prescription_id)
-    .eq('clinic_id', clinicId)
-    .eq('status', 'confirmed')
-    .single()
+  // Atomic dispense: locks the prescription + each medicine row, validates stock,
+  // decrements, writes the ledger, and flips status to 'dispensed' in one tx.
+  // Replaces the former read-then-write loop that raced on medicines.stock.
+  const { data: result, error } = await db.rpc('dispense_prescription', {
+    p_prescription_id: prescription_id,
+    p_clinic_id:       clinicId,
+  })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (!prescription) {
+  const r = (result ?? {}) as {
+    ok: boolean
+    code?: string
+    items?: { name: string; stock: number; needed: number }[]
+    patient_id?: string
+  }
+  if (!r.ok) {
+    if (r.code === 'insufficient') {
+      return NextResponse.json({ error: 'Stok tidak mencukupi', items: r.items ?? [] }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Resep tidak ditemukan atau sudah dikeluarkan' }, { status: 404 })
   }
 
-  // Check all stocks
-  const insufficient: { name: string; stock: number; needed: number }[] = []
-  for (const item of prescription.prescription_items as any[]) {
-    const med = item.medicines as any
-    if ((med?.stock ?? 0) < item.quantity) {
-      insufficient.push({ name: med?.name ?? '', stock: med?.stock ?? 0, needed: item.quantity })
-    }
-  }
-  if (insufficient.length > 0) {
-    return NextResponse.json({ error: 'Stok tidak mencukupi', items: insufficient }, { status: 400 })
-  }
-
-  // Update stocks + insert transactions
-  await Promise.all(
-    (prescription.prescription_items as any[]).map(async (item) => {
-      const med        = item.medicines as any
-      const stockAfter = (med.stock ?? 0) - item.quantity
-      await db.from('medicine_transactions').insert({
-        clinic_id:    clinicId,
-        medicine_id:  item.medicine_id,
-        type:         'keluar',
-        quantity:     item.quantity,
-        stock_before: med.stock,
-        stock_after:  stockAfter,
-        notes:        `Resep ${prescription_id.slice(-8)}`,
-      })
-      await db.from('medicines').update({ stock: stockAfter }).eq('id', item.medicine_id).eq('clinic_id', clinicId)
-    })
-  )
-
-  await db.from('prescriptions').update({ status: 'dispensed' }).eq('id', prescription_id)
-
   // WA notification (non-blocking)
   const [{ data: patient }, { data: clinic }] = await Promise.all([
-    db.from('patients').select('full_name, phone').eq('id', prescription.patient_id).single(),
+    db.from('patients').select('full_name, phone').eq('id', r.patient_id).single(),
     db.from('clinics').select('name, fonnte_token').eq('id', clinicId).single(),
   ])
 
