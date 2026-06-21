@@ -3,6 +3,7 @@ import { getClinicUser } from '@/lib/clinic'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Calendar, Activity, FileText, Clock } from 'lucide-react'
 import Link from 'next/link'
+import UpcomingActions from './UpcomingActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,7 @@ export default async function PatientDashboardPage() {
 
   const [{ data: nextApts }, { data: lastVisits }] = await Promise.all([
     patientRec ? db.from('appointments')
-      .select('id, scheduled_at, complaint, doctors(full_name, specialty)')
+      .select('id, scheduled_at, complaint, doctor_id, doctors(full_name, specialty)')
       .eq('clinic_id', user.clinic_id)
       .eq('patient_id', patientRec.id)
       .gt('scheduled_at', now)
@@ -103,9 +104,12 @@ export default async function PatientDashboardPage() {
             </div>
           </div>
           
-          <div className="mt-10 pt-8 border-t border-white/5 flex gap-4 relative z-10">
-            <button className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-gray-100 transition-all">Peta Lokasi</button>
-            <button className="bg-white/10 text-white border border-white/20 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white/20 transition-all">Reschedule</button>
+          <div className="mt-10 pt-8 border-t border-white/5 relative z-10">
+            <UpcomingActions
+              appointmentId={apt.id}
+              doctorId={apt.doctor_id ?? null}
+              doctorName={(apt.doctors as { full_name?: string } | null)?.full_name ?? ''}
+            />
           </div>
         </div>
       ) : (
