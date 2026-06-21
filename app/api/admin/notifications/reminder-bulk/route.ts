@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/api-auth'
 import { sendAndLog, buildMessage } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
@@ -17,20 +17,10 @@ function fmtTime(iso: string) {
     .format(new Date(iso))
 }
 
-async function getClinicId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const db = createAdminClient()
-  const { data } = await db.from('users').select('clinic_id').eq('id', user.id).single()
-  return data?.clinic_id ?? null
-}
-
 export async function POST() {
-  const clinicId = await getClinicId()
-  if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const db = createAdminClient()
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  if (!auth.ok) return auth.res
+  const { db, clinicId } = auth
 
   const { data: clinic } = await db
     .from('clinics')

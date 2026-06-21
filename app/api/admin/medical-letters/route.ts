@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { belongsToClinic } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,6 +59,15 @@ export async function POST(request: Request) {
   }
 
   const db = createAdminClient()
+
+  // Cross-tenant guards: patient & doctor must belong to this clinic
+  if (!(await belongsToClinic(db, 'patients', body.patient_id, auth.clinicId))) {
+    return NextResponse.json({ error: 'Pasien tidak ditemukan' }, { status: 404 })
+  }
+  if (!(await belongsToClinic(db, 'doctors', body.doctor_id, auth.clinicId))) {
+    return NextResponse.json({ error: 'Dokter tidak ditemukan' }, { status: 404 })
+  }
+
   const { data: letterNumber } = await db.rpc('generate_letter_number', {
     p_clinic_id: auth.clinicId,
     p_type: body.type,

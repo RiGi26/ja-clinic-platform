@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { belongsToClinic } from '@/lib/api-auth'
+import { getClinicPlanStatus } from '@/lib/plan-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -138,6 +140,16 @@ export async function POST(request: Request) {
   }
 
   const db = createAdminClient()
+
+  // Block writes for expired/suspended clinics
+  if ((await getClinicPlanStatus(info.clinicId)).isBlocked) {
+    return NextResponse.json({ error: 'Masa aktif klinik telah berakhir atau ditangguhkan. Hubungi tim kami.' }, { status: 403 })
+  }
+  // Cross-tenant guards: appointment & patient must belong to this clinic
+  if (!(await belongsToClinic(db, 'appointments', appointment_id, info.clinicId)) ||
+      !(await belongsToClinic(db, 'patients', patient_id, info.clinicId))) {
+    return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 404 })
+  }
 
   const { data: record, error: recErr } = await db
     .from('medical_records')

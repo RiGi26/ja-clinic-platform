@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getClinicPlanStatus } from '@/lib/plan-guard'
+import { belongsToClinic } from '@/lib/api-auth'
 import { sendEmail } from '@/lib/email'
 import React from 'react'
 import AppointmentConfirmed from '@/emails/AppointmentConfirmed'
@@ -16,16 +17,21 @@ export async function POST(request: Request) {
   const { data: profile } = await db.from('users').select('clinic_id').eq('id', user.id).single()
   if (!profile?.clinic_id) return NextResponse.json({ error: 'Clinic not found' }, { status: 400 })
 
-  const { isExpired } = await getClinicPlanStatus(profile.clinic_id)
-  if (isExpired) {
+  const { isBlocked } = await getClinicPlanStatus(profile.clinic_id)
+  if (isBlocked) {
     return NextResponse.json(
-      { error: 'Masa aktif klinik telah berakhir. Hubungi tim kami.' },
+      { error: 'Masa aktif klinik telah berakhir atau ditangguhkan. Hubungi tim kami.' },
       { status: 403 }
     )
   }
 
   const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time, email, jenis_kunjungan, no_bpjs } = await request.json()
   const clinicId = profile.clinic_id
+
+  // Cross-tenant guard: doctor must belong to this clinic
+  if (!(await belongsToClinic(db, 'doctors', doctor_id, clinicId))) {
+    return NextResponse.json({ error: 'Dokter tidak ditemukan' }, { status: 404 })
+  }
 
   // Generate No. RM
   const yr  = new Date().getFullYear()

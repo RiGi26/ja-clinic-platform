@@ -1,23 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/api-auth'
 import { sendWhatsApp } from '@/lib/fonnte'
 
 export const dynamic = 'force-dynamic'
 
-async function getClinicId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const db = createAdminClient()
-  const { data } = await db.from('users').select('clinic_id').eq('id', user.id).single()
-  return data?.clinic_id ?? null
-}
-
 export async function POST() {
-  const clinicId = await getClinicId()
-  if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser({ roles: ['admin'] })
+  if (!auth.ok) return auth.res
+  const { db, clinicId } = auth
 
-  const db = createAdminClient()
   const { data: clinic } = await db
     .from('clinics')
     .select('name, phone, fonnte_token')

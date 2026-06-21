@@ -1,23 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
-
-async function getClinicId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const db = createAdminClient()
-  const { data } = await db.from('users').select('clinic_id').eq('id', user.id).single()
-  return data?.clinic_id ?? null
-}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const clinicId = await getClinicId()
-  if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  if (!auth.ok) return auth.res
+  const { db, clinicId } = auth
 
   const { id } = await params
   const { payment_method } = await request.json()
@@ -27,7 +19,6 @@ export async function PATCH(
     return NextResponse.json({ error: 'Metode pembayaran tidak valid' }, { status: 400 })
   }
 
-  const db = createAdminClient()
   const { error } = await db
     .from('billing')
     .update({ status: 'paid', payment_method, paid_at: new Date().toISOString() })

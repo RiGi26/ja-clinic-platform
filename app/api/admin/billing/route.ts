@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { getClinicPlanStatus } from '@/lib/plan-guard'
+import { requireApiUser, belongsToClinic } from '@/lib/api-auth'
 import { sendAndLog } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
-
-async function getClinicId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const db = createAdminClient()
-  const { data } = await db.from('users').select('clinic_id').eq('id', user.id).single()
-  return data?.clinic_id ?? null
-}
 
 type BillingItem = { name: string; qty: number; price: number; subtotal: number }
 
@@ -23,16 +13,9 @@ function fmtRupiah(n: number) {
 const VALID_PAY_METHODS = ['cash', 'transfer', 'bpjs', 'insurance']
 
 export async function POST(request: Request) {
-  const clinicId = await getClinicId()
-  if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { isExpired } = await getClinicPlanStatus(clinicId)
-  if (isExpired) {
-    return NextResponse.json(
-      { error: 'Masa aktif klinik telah berakhir. Hubungi tim kami.' },
-      { status: 403 }
-    )
-  }
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'], activeClinic: true })
+  if (!auth.ok) return auth.res
+  const { db, clinicId } = auth
 
   const body = await request.json() as {
     patient_id      : string
@@ -51,7 +34,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Minimal 1 item tagihan' }, { status: 400 })
   }
 
-  const db = createAdminClient()
+  // Cross-tenant guards: referenced rows must belong to this clinic
+  if (!(await belongsToClinic(db, 'patients', body.patient_id, clinicId))) {
+    return NextResponse.json({ error: 'Pasien tidak ditemukan' }, { status: 404 })
+  }
+  if (body.appointment_id && !(await belongsToClinic(db, 'appointments', body.appointment_id, clinicId))) {
+    return NextResponse.json({ error: 'Appointment tidak ditemukan' }, { status: 404 })
+  }
 
   const { data: invData } = await db.rpc('generate_invoice_number', { p_clinic_id: clinicId })
   const invoiceNumber = invData as string | null
@@ -168,15 +157,15 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const clinicId = await getClinicId()
-  if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  if (!auth.ok) return auth.res
+  const { db, clinicId } = auth
 
   const { searchParams } = new URL(request.url)
   const from   = searchParams.get('from')
   const to     = searchParams.get('to')
   const status = searchParams.get('status')
 
-  const db = createAdminClient()
   let q = db.from('billing')
     .select(`
       id, invoice_number, total, subtotal, discount, status,

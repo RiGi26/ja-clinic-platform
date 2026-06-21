@@ -2,6 +2,10 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 export type ClinicPlanStatus = {
   isExpired: boolean
+  /** Clinic deactivated by superadmin (is_active=false or plan='suspended'). */
+  isSuspended: boolean
+  /** Convenience: should writes be blocked? (expired OR suspended) */
+  isBlocked: boolean
   isTrial: boolean
   daysLeft: number | null
   plan: string
@@ -13,11 +17,13 @@ export async function getClinicPlanStatus(clinicId: string): Promise<ClinicPlanS
   const db = createAdminClient()
   const { data: clinic } = await db
     .from('clinics')
-    .select('plan, plan_expires_at')
+    .select('plan, plan_expires_at, is_active')
     .eq('id', clinicId)
     .single()
 
-  if (!clinic) return { isExpired: false, isTrial: false, daysLeft: null, plan: 'unknown' }
+  if (!clinic) {
+    return { isExpired: false, isSuspended: false, isBlocked: false, isTrial: false, daysLeft: null, plan: 'unknown' }
+  }
 
   const now = new Date()
   let daysLeft: number | null = null
@@ -31,8 +37,12 @@ export async function getClinicPlanStatus(clinicId: string): Promise<ClinicPlanS
     }
   }
 
+  const isSuspended = clinic.is_active === false || clinic.plan === 'suspended'
+
   return {
     isExpired,
+    isSuspended,
+    isBlocked: isExpired || isSuspended,
     isTrial: clinic.plan === 'trial',
     daysLeft,
     plan: clinic.plan,

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/api-auth'
 import { sendAndLog, buildMessage, type NotificationType } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
@@ -30,24 +30,15 @@ function fmtTime(iso: string) {
     .format(new Date(iso))
 }
 
-async function getClinicId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const db = createAdminClient()
-  const { data } = await db.from('users').select('clinic_id').eq('id', user.id).single()
-  return data?.clinic_id ?? null
-}
-
 export async function POST(request: Request) {
-  const clinicId = await getClinicId()
-  if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  if (!auth.ok) return auth.res
+  const { db, clinicId } = auth
 
   const body = await request.json() as { type: IncomingType; appointmentId?: string; billingId?: string }
 
   // Handle invoice type via billingId
   if (body.type === 'invoice' && body.billingId) {
-    const db = createAdminClient()
     const { data: bill } = await db
       .from('billing')
       .select('invoice_number, total, patients(full_name, phone), clinics(name, fonnte_token)')
@@ -90,8 +81,6 @@ export async function POST(request: Request) {
   if (!appointmentId || !TYPE_MAP[type]) {
     return NextResponse.json({ error: 'Tipe notifikasi atau appointmentId tidak valid' }, { status: 400 })
   }
-
-  const db = createAdminClient()
 
   const { data: appt } = await db
     .from('appointments')
