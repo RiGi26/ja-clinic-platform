@@ -49,33 +49,38 @@ export async function PATCH(
   }
 
   const db = createAdminClient()
-  const { data: medicine } = await db.from('medicines').select('stock').eq('id', id).eq('clinic_id', clinicId).single()
-  if (!medicine) return NextResponse.json({ error: 'Obat tidak ditemukan' }, { status: 404 })
 
+  // Atomic stock movement (if requested): locks the medicine row, guards against
+  // negative stock, writes medicines + ledger in one tx. Replaces the former
+  // read-then-write that raced on medicines.stock.
+  if (body.type && body.quantity !== undefined) {
+    const { data: result, error } = await db.rpc('adjust_medicine_stock', {
+      p_medicine_id: id,
+      p_clinic_id:   clinicId,
+      p_type:        body.type,
+      p_quantity:    body.quantity,
+      p_reference:   body.reference ?? null,
+      p_notes:       body.notes ?? null,
+    })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    const r = (result ?? {}) as { ok: boolean; code?: string }
+    if (!r.ok) {
+      if (r.code === 'not_found')    return NextResponse.json({ error: 'Obat tidak ditemukan' }, { status: 404 })
+      if (r.code === 'insufficient') return NextResponse.json({ error: 'Stok tidak mencukupi' }, { status: 400 })
+      return NextResponse.json({ error: 'Gagal memperbarui stok' }, { status: 400 })
+    }
+  }
+
+  // Non-stock field updates (not subject to the stock race)
   const updates: Record<string, unknown> = {}
   if (body.name      !== undefined) updates.name      = body.name
   if (body.min_stock !== undefined) updates.min_stock = body.min_stock
   if (body.price     !== undefined) updates.price     = body.price
   if (body.is_active !== undefined) updates.is_active = body.is_active
 
-  if (body.type && body.quantity !== undefined) {
-    const stockBefore = medicine.stock
-    const qty         = body.quantity
-    const stockAfter  = body.type === 'masuk' ? stockBefore + qty
-                      : body.type === 'keluar' ? stockBefore - qty
-                      : qty
-
-    if (stockAfter < 0) return NextResponse.json({ error: 'Stok tidak mencukupi' }, { status: 400 })
-
-    updates.stock = stockAfter
-    await db.from('medicine_transactions').insert({
-      clinic_id: clinicId, medicine_id: id,
-      type: body.type, quantity: qty, stock_before: stockBefore, stock_after: stockAfter,
-      reference: body.reference ?? null, notes: body.notes ?? null,
-    })
-  }
-
   if (Object.keys(updates).length > 0) {
+    const { data: exists } = await db.from('medicines').select('id').eq('id', id).eq('clinic_id', clinicId).single()
+    if (!exists) return NextResponse.json({ error: 'Obat tidak ditemukan' }, { status: 404 })
     const { error } = await db.from('medicines').update(updates).eq('id', id).eq('clinic_id', clinicId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
