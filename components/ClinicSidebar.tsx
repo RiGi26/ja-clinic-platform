@@ -168,7 +168,7 @@ export default function ClinicSidebar({ role, userName, userSub, isCollapsed, se
           <button onClick={() => setMobileOpen(true)} className="p-2 -ml-2 text-gray-600 rounded-lg hover:bg-black/5">
             <Menu size={22} />
           </button>
-          <Image src="/images/Icon.png" alt="Logo" width={28} height={28} className="object-contain" />
+          <Image src="/logo-rocket.png" alt="Webzoka" width={28} height={28} className="object-contain" />
           <h1 className="text-[17px] sf-display-heavy text-[#1D1D1F] truncate max-w-[180px]">{pageTitle}</h1>
         </div>
         <form action="/auth/logout" method="post">
@@ -193,15 +193,7 @@ export default function ClinicSidebar({ role, userName, userSub, isCollapsed, se
       >
         {/* Drawer Header */}
         <div className="px-5 pt-8 pb-5 flex items-center justify-between h-24 shrink-0">
-          <div className="flex items-center gap-3">
-            <Image src="/images/Icon.png" alt="Logo" width={36} height={36} className="object-contain drop-shadow-sm" />
-            <div>
-              <h1 className="text-lg sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Japan Arena</h1>
-              <div className="mt-1 bg-gradient-to-r from-[#0071E3] to-[#42A1FF] text-white text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-widest inline-block">
-                Clinic Platform
-              </div>
-            </div>
-          </div>
+          <img src="/logo-wide-clean.png" alt="Webzoka — Part of Japan Arena Corp" className="w-[180px] max-w-[72%] max-h-[56px] object-contain" />
           <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-black/5 transition-colors">
             <X size={20} />
           </button>
@@ -248,20 +240,21 @@ export default function ClinicSidebar({ role, userName, userSub, isCollapsed, se
         </button>
 
         {/* Logo */}
-        {/* Logo */}
         <div
-          className={`flex flex-col shrink-0 items-center justify-center border-b border-black/5 px-4 transition-all duration-300 ${isCollapsed ? 'h-16 py-3' : 'h-28 py-5'}`}
+          className={`relative flex shrink-0 items-center justify-center border-b border-black/5 transition-all duration-300 ${isCollapsed ? 'h-16 px-2' : 'h-28 px-5'}`}
         >
-          <img
-            src="/logo-rocket.png"
-            alt="Logo Webzoka"
-            className={`w-auto shrink-0 object-contain transition-all duration-300 ${isCollapsed ? 'h-8' : 'h-10'}`}
-          />
-          {!isCollapsed && (
-            <div className="min-w-0 animate-fade-in select-none text-center mt-2.5">
-              <p className="truncate text-sm font-bold tracking-tight text-gray-900">Clinic Platform</p>
-              <p className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase mt-0.5">Portal Operasi</p>
-            </div>
+          {isCollapsed ? (
+            <img
+              src="/logo-rocket.png"
+              alt="Webzoka"
+              className="h-9 w-auto shrink-0 object-contain"
+            />
+          ) : (
+            <img
+              src="/logo-wide-clean.png"
+              alt="Webzoka — Part of Japan Arena Corp"
+              className="w-[210px] max-w-[86%] max-h-[72px] object-contain animate-fade-in"
+            />
           )}
         </div>
 

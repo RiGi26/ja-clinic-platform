@@ -48,18 +48,20 @@ export default function ReceptionistSidebar({ userName }: { userName: string }) 
     >
       {/* Brand */}
       <div
-        className={`flex flex-col shrink-0 items-center justify-center border-b border-white/10 px-4 transition-all duration-300 ${collapsed ? 'h-16 py-3' : 'h-28 py-5'}`}
+        className={`relative flex shrink-0 items-center justify-center border-b border-white/10 transition-all duration-300 ${collapsed ? 'h-16 px-2' : 'h-28 px-5'}`}
       >
-        <img
-          src="/logo-rocket.png"
-          alt="Logo Webzoka"
-          className={`w-auto shrink-0 object-contain transition-all duration-300 ${collapsed ? 'h-8' : 'h-10'}`}
-        />
-        {!collapsed && (
-          <div className="min-w-0 animate-fade-in select-none text-center mt-2.5">
-            <p className="truncate text-sm font-bold tracking-tight text-white">Clinic Platform</p>
-            <p className="text-[10px] font-semibold tracking-wider text-white/40 uppercase mt-0.5">Portal Operasi</p>
-          </div>
+        {collapsed ? (
+          <img
+            src="/logo-rocket-white.png"
+            alt="Webzoka"
+            className="h-9 w-auto shrink-0 object-contain"
+          />
+        ) : (
+          <img
+            src="/logo-wide-white.png"
+            alt="Webzoka — Part of Japan Arena Corp"
+            className="w-[200px] max-w-[86%] max-h-[72px] object-contain animate-fade-in"
+          />
         )}
       </div>
 
