@@ -44,7 +44,7 @@ export default function DomainNotFoundPage() {
           </a>
 
           <a
-            href="https://ja-clinic-platform.vercel.app/auth/login"
+            href="https://clinic.webzoka.com/auth/login"
             className="w-full py-4 rounded-2xl text-sm font-black border border-white/20 text-white/80 hover:bg-white/10 transition-all"
           >
             Login via Platform Utama →
