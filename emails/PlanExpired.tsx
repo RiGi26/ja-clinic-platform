@@ -50,7 +50,7 @@ export default function PlanExpired({ adminName, clinicName, expiredAt, contactU
           Hubungi Kami via WhatsApp
         </Button>
         <Text style={{ fontSize: '13px', color: '#9CA3AF', marginTop: '24px' }}>
-          Butuh bantuan? Email kami di support@japanarenacorp.com
+          Butuh bantuan? Email kami di support@webzoka.com
         </Text>
       </Section>
     </BaseLayout>

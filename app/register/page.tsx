@@ -265,7 +265,7 @@ export default function RegisterPage() {
                       <p className="text-[11px] text-gray-400 mt-1">
                         URL:{' '}
                         <span className={`font-mono font-bold ${RESERVED.has(slug) ? 'text-red-500' : 'text-[#0891B2]'}`}>
-                          {slug}.ja-clinic-platform.vercel.app
+                          {slug}.clinic.webzoka.com
                         </span>
                       </p>
                     )}
