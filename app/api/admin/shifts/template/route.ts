@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { guardEntitlementApi } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ async function getAdminClinicId() {
 export async function GET() {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'shifts'); if (gate) return gate
 
   const db = createAdminClient()
   const { data, error } = await db
@@ -31,6 +33,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'shifts'); if (gate) return gate
 
   const body = await request.json() as { user_id: string; day_of_week: number; shift: string }
   if (!body.user_id || body.day_of_week === undefined || !body.shift) {
@@ -52,6 +55,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'shifts'); if (gate) return gate
 
   const body = await request.json() as { user_id: string; day_of_week: number }
   const db = createAdminClient()

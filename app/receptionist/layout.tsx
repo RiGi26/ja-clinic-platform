@@ -1,7 +1,9 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { ReactNode } from 'react'
+import { ReactNode, Suspense } from 'react'
 import ClinicClientLayout from '@/components/ClinicClientLayout'
+import UpsellBanner from '@/components/UpsellBanner'
+import { getClinicEntitlements } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,13 +27,18 @@ async function getReceptionist() {
 
 export default async function ReceptionistLayout({ children }: { children: ReactNode }) {
   const user = await getReceptionist()
+  const ent  = await getClinicEntitlements(user.clinic_id)
 
   return (
     <div className="h-screen flex overflow-hidden bg-bg text-text">
+      <Suspense fallback={null}>
+        <UpsellBanner />
+      </Suspense>
       <ClinicClientLayout
         role="receptionist"
         userName={user.full_name}
         userSub="Resepsionis"
+        entitlements={ent.entitlements}
       >
         {children}
       </ClinicClientLayout>

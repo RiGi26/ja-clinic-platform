@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getClinicPlanStatus } from '@/lib/plan-guard'
+import { guardEntitlementApi } from '@/lib/clinic-entitlements'
+import type { EntitlementKey } from '@/lib/entitlements'
 
 type AdminDb = ReturnType<typeof createAdminClient>
 
@@ -19,6 +21,8 @@ type RequireOpts = {
   roles?: string[]
   /** Reject when the clinic's plan is expired or the clinic is suspended (write-guard). */
   activeClinic?: boolean
+  /** Require a tier feature — 403 (with upsell key) when the clinic's package lacks it. */
+  entitlement?: EntitlementKey
 }
 
 /**
@@ -62,6 +66,11 @@ export async function requireApiUser(opts: RequireOpts = {}): Promise<ApiAuth> {
         ),
       }
     }
+  }
+
+  if (opts.entitlement) {
+    const g = await guardEntitlementApi(profile.clinic_id, opts.entitlement)
+    if (g) return { ok: false, res: g }
   }
 
   return { ok: true, db, userId: user.id, clinicId: profile.clinic_id, role: profile.role }

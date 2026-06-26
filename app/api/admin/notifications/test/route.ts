@@ -5,7 +5,7 @@ import { sendWhatsApp } from '@/lib/fonnte'
 export const dynamic = 'force-dynamic'
 
 export async function POST() {
-  const auth = await requireApiUser({ roles: ['admin'] })
+  const auth = await requireApiUser({ roles: ['admin'], entitlement: 'notifications' })
   if (!auth.ok) return auth.res
   const { db, clinicId } = auth
 

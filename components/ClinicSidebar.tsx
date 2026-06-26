@@ -11,10 +11,12 @@ import {
   UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { EntitlementKey } from '@/lib/entitlements'
 
 type Role = 'admin' | 'doctor' | 'patient' | 'receptionist'
 
-type NavItem = { href: string; Icon: LucideIcon; label: string }
+/** `ent` (optional) = the tier feature this item needs; hidden when the clinic lacks it. */
+type NavItem = { href: string; Icon: LucideIcon; label: string; ent?: EntitlementKey }
 
 const NAV_GROUPS: Record<Role, { label: string; items: NavItem[] }[]> = {
   admin: [
@@ -30,22 +32,22 @@ const NAV_GROUPS: Record<Role, { label: string; items: NavItem[] }[]> = {
       items: [
         { href: '/admin/patients',        Icon: Users,           label: 'Database Pasien'    },
         { href: '/admin/schedule',        Icon: Calendar,        label: 'Jadwal Dokter'      },
-        { href: '/admin/shifts',          Icon: CalendarCheck,   label: 'Jadwal Staf'        },
+        { href: '/admin/shifts',          Icon: CalendarCheck,   label: 'Jadwal Staf',        ent: 'shifts'   },
       ]
     },
     {
       label: 'Layanan & Stok',
       items: [
         { href: '/admin/treatments',      Icon: Tag,             label: 'Tindakan & Tarif'   },
-        { href: '/admin/medicines',       Icon: Pill,            label: 'Stok Obat (Apotek)' },
+        { href: '/admin/medicines',       Icon: Pill,            label: 'Stok Obat (Apotek)', ent: 'pharmacy' },
         { href: '/admin/medical-letters', Icon: FileCheck,       label: 'Surat Keterangan'   },
       ]
     },
     {
       label: 'Keuangan & Sistem',
       items: [
-        { href: '/admin/billing',         Icon: CreditCard,      label: 'Keuangan & Billing' },
-        { href: '/admin/laporan',         Icon: BarChart3,       label: 'Laporan Analitik'   },
+        { href: '/admin/billing',         Icon: CreditCard,      label: 'Keuangan & Billing', ent: 'billing'  },
+        { href: '/admin/laporan',         Icon: BarChart3,       label: 'Laporan Analitik',   ent: 'reports'  },
         { href: '/admin/settings',        Icon: Settings,        label: 'Pengaturan'         },
       ]
     }
@@ -86,8 +88,8 @@ const NAV_GROUPS: Record<Role, { label: string; items: NavItem[] }[]> = {
     {
       label: 'Pelayanan',
       items: [
-        { href: '/receptionist/dispensing',   Icon: Pill,            label: 'Obat & Resep'    },
-        { href: '/receptionist/billing',      Icon: Receipt,         label: 'Billing'         },
+        { href: '/receptionist/dispensing',   Icon: Pill,            label: 'Obat & Resep',   ent: 'pharmacy' },
+        { href: '/receptionist/billing',      Icon: Receipt,         label: 'Billing',        ent: 'billing'  },
       ]
     }
   ],
@@ -108,18 +110,24 @@ type Props = {
   role           : Role
   userName       : string
   userSub?       : string
+  entitlements?  : EntitlementKey[]
   isCollapsed    : boolean
   setIsCollapsed : (v: boolean) => void
 }
 
-export default function ClinicSidebar({ role, userName, userSub, isCollapsed, setIsCollapsed }: Props) {
+export default function ClinicSidebar({ role, userName, userSub, entitlements, isCollapsed, setIsCollapsed }: Props) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const isActive = (href: string) =>
     href === `/${role}` ? pathname === `/${role}` : pathname.startsWith(href)
 
+  // Hide gated items the clinic's package doesn't include. When entitlements is
+  // undefined (not passed) every item shows — the server-side guards are the real gate.
+  const allowed = (item: NavItem) => !item.ent || !entitlements || entitlements.includes(item.ent)
   const groups = NAV_GROUPS[role]
+    .map(g => ({ ...g, items: g.items.filter(allowed) }))
+    .filter(g => g.items.length > 0)
   const pageTitle = groups.flatMap(g => g.items).find(i => isActive(i.href))?.label ?? 'Clinic Platform'
 
   // Shared nav items renderer

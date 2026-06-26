@@ -13,7 +13,7 @@ function fmtRupiah(n: number) {
 const VALID_PAY_METHODS = ['cash', 'transfer', 'bpjs', 'insurance']
 
 export async function POST(request: Request) {
-  const auth = await requireApiUser({ roles: ['admin', 'receptionist'], activeClinic: true })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'], activeClinic: true, entitlement: 'billing' })
   if (!auth.ok) return auth.res
   const { db, clinicId } = auth
 
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'], entitlement: 'billing' })
   if (!auth.ok) return auth.res
   const { db, clinicId } = auth
 
