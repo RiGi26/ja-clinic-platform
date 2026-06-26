@@ -2,7 +2,7 @@ import { tenantConfig } from '@/lib/tenant-config'
 
 export default function DomainNotFoundPage() {
   const waUrl = `https://wa.me/${tenantConfig.adminPhone}?text=${encodeURIComponent(
-    'Halo, saya ingin mendaftarkan custom domain klinik saya ke platform Japan Arena Clinic.',
+    'Halo, saya ingin mendaftarkan custom domain klinik saya ke platform Webzoka Clinic.',
   )}`
 
   return (
@@ -52,7 +52,7 @@ export default function DomainNotFoundPage() {
         </div>
 
         <p className="text-white/30 text-xs mt-8">
-          Japan Arena Corp · Clinic Platform
+          Webzoka · Clinic Platform
         </p>
       </div>
     </div>

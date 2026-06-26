@@ -80,10 +80,10 @@ export default function DemoHubPage() {
         {/* Header */}
         <div className="text-center mb-10">
           <Link href="/auth/login" className="inline-flex items-center gap-3 group mb-4">
-            <Image src="/images/Icon.png" alt="Japan Arena" width={48} height={48}
+            <Image src="/images/Icon.png" alt="Webzoka" width={48} height={48}
               className="w-12 h-12 object-contain drop-shadow-sm group-hover:scale-105 transition-transform" priority />
             <div className="text-left">
-              <h1 className="text-2xl sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Japan Arena</h1>
+              <h1 className="text-2xl sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Webzoka</h1>
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Clinic Platform</p>
             </div>
           </Link>
@@ -145,7 +145,7 @@ export default function DemoHubPage() {
             <Link href="/register" className="font-bold text-apple-blue hover:underline">Coba Gratis 14 Hari →</Link>
           </p>
           <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-4">
-            © {new Date().getFullYear()} Japan Arena Corp
+            © {new Date().getFullYear()} Webzoka
           </p>
         </div>
 
