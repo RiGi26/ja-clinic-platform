@@ -62,7 +62,7 @@ export default async function PatientDashboardPage() {
           <h2 className="text-[32px] md:text-[40px] sf-display-heavy tracking-tight text-[#1D1D1F] leading-tight">
             Okaeri, {nameFirst}.
           </h2>
-          <p className="text-gray-500 text-sm mt-1 sf-display">Selamat datang kembali di Japan Arena Clinic.</p>
+          <p className="text-gray-500 text-sm mt-1 sf-display">Selamat datang kembali di Webzoka Clinic.</p>
         </div>
         
         <Link href="/patient/booking"

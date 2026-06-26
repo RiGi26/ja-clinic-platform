@@ -36,7 +36,7 @@ export default function BaseLayout({
           <Hr style={{ borderColor: '#E5E7EB', margin: '32px 0 24px' }} />
 
           <Text style={{ fontSize: '12px', color: '#9CA3AF', textAlign: 'center', margin: 0 }}>
-            © {new Date().getFullYear()} Japan Arena Corp. All rights reserved.
+            © {new Date().getFullYear()} Webzoka. All rights reserved.
           </Text>
         </Container>
       </Body>

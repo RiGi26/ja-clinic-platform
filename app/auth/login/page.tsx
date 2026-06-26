@@ -66,7 +66,7 @@ export default function LoginPage() {
         <div className="text-center mb-10 flex flex-col items-center gap-3">
           <img src="/logo-rocket.png" alt="Logo Webzoka" className="h-16 w-16 object-contain" />
           <div className="text-center mt-2">
-            <h1 className="text-2xl sf-display-heavy tracking-tight text-gray-900 leading-none">Japan Arena</h1>
+            <h1 className="text-2xl sf-display-heavy tracking-tight text-gray-900 leading-none">Webzoka</h1>
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Clinic Platform</p>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function LoginPage() {
             <a href="/register" className="text-apple-blue font-bold hover:underline">Coba Gratis 14 Hari</a>
           </p>
           <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
-            © {new Date().getFullYear()} Japan Arena Corp
+            © {new Date().getFullYear()} Webzoka
           </p>
         </div>
 

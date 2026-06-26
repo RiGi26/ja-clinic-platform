@@ -118,7 +118,7 @@ export default function RegisterPage() {
           <Link href="/auth/login" className="group inline-flex items-center gap-2 w-fit">
             <Image
               src="/images/logo-dark.png"
-              alt="Japan Arena Corp"
+              alt="Webzoka"
               width={280} height={84}
               className="w-[200px] h-auto object-contain"
               priority
@@ -165,7 +165,7 @@ export default function RegisterPage() {
 
           {/* Mobile logo */}
           <Link href="/auth/login" className="flex items-center gap-2 mb-6 lg:hidden group">
-            <Image src="/images/Icon.png" alt="Japan Arena Corp" width={40} height={40} className="w-10 h-auto object-contain" />
+            <Image src="/images/Icon.png" alt="Webzoka" width={40} height={40} className="w-10 h-auto object-contain" />
             <span className="text-xs text-gray-400 group-hover:text-[#0891B2] transition-colors font-medium">← Login</span>
           </Link>
 
@@ -341,7 +341,7 @@ export default function RegisterPage() {
                     <span className="text-xs text-gray-500">
                       Saya setuju dengan{' '}
                       <span className="text-[#0891B2] font-bold">syarat & ketentuan</span>{' '}
-                      penggunaan platform Japan Arena Clinic
+                      penggunaan platform Webzoka Clinic
                     </span>
                   </label>
 
@@ -371,7 +371,7 @@ export default function RegisterPage() {
           )}
 
           <p className="text-center text-xs text-gray-400 mt-4">
-            © {new Date().getFullYear()} Japan Arena Corp · Clinic Platform
+            © {new Date().getFullYear()} Webzoka · Clinic Platform
           </p>
         </div>
       </div>

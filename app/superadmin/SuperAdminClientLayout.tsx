@@ -106,7 +106,7 @@ export default function SuperAdminClientLayout({
           <div className="flex items-center gap-3">
             <Image src="/images/Icon.png" alt="Logo" width={36} height={36} className="object-contain drop-shadow-sm" />
             <div>
-              <h1 className="text-lg sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Japan Arena</h1>
+              <h1 className="text-lg sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Webzoka</h1>
               <div className="mt-1 bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-widest inline-block">
                 Superadmin
               </div>
@@ -157,9 +157,9 @@ export default function SuperAdminClientLayout({
 
         <div className="px-6 pt-10 pb-6 flex items-center h-24 shrink-0 overflow-hidden">
           <div className={`flex items-center gap-3 transition-opacity duration-200 ${isCollapsed ? 'hidden opacity-0' : 'flex opacity-100'}`}>
-            <Image src="/images/Icon.png" alt="Japan Arena Logo" width={40} height={40} className="w-10 h-10 object-contain drop-shadow-sm" priority />
+            <Image src="/images/Icon.png" alt="Webzoka Logo" width={40} height={40} className="w-10 h-10 object-contain drop-shadow-sm" priority />
             <div>
-              <h1 className="text-xl sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Japan Arena</h1>
+              <h1 className="text-xl sf-display-heavy tracking-tight text-[#1D1D1F] leading-none">Webzoka</h1>
               <div className="mt-1 bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-widest inline-block shadow-sm">
                 Superadmin
               </div>
