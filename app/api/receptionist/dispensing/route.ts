@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { sendAndLog } from '@/lib/notifications'
+import { guardEntitlementApi } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,7 @@ async function getClinicId() {
 export async function GET() {
   const clinicId = await getClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'pharmacy'); if (gate) return gate
 
   const now   = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
@@ -47,6 +49,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const clinicId = await getClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'pharmacy'); if (gate) return gate
 
   const { prescription_id } = await request.json() as { prescription_id: string }
   const db = createAdminClient()

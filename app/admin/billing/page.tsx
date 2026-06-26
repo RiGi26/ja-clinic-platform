@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation'
-import { getClinicUser } from '@/lib/clinic'
 import { createAdminClient } from '@/lib/supabase/server'
+import { requireEntitlement } from '@/lib/clinic-entitlements'
 import TopBar from '@/components/TopBar'
 import BillingClient from './BillingClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function BillingPage() {
-  const user = await getClinicUser()
+  const { user } = await requireEntitlement('billing')
   if (user.role !== 'admin') redirect('/auth/login')
 
   const db  = createAdminClient()

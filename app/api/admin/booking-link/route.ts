@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { guardEntitlementApi } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,7 @@ function slugify(text: string): string {
 export async function GET() {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'booking_link'); if (gate) return gate
 
   const db = createAdminClient()
   const { data } = await db.from('booking_links').select('id, slug, is_active').eq('clinic_id', clinicId).single()
@@ -29,6 +31,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'booking_link'); if (gate) return gate
 
   const body = await request.json() as { action: 'generate' | 'toggle'; is_active?: boolean }
   const db   = createAdminClient()

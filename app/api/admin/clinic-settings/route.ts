@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
+import { getClinicEntitlements } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,23 @@ export async function POST(request: Request) {
   const { db, clinicId } = auth
 
   const { clinic, doctors } = await request.json()
+
+  // Seat limit (active doctors) per tier. The settings page submits the full doctor
+  // list, so the active count in the payload IS the resulting active count — reject
+  // before any write when it would exceed the clinic's package limit.
+  const ent = await getClinicEntitlements(clinicId)
+  if (ent.maxActiveUsers !== null) {
+    const activeCount = (doctors as { is_active?: boolean }[]).filter(d => d.is_active).length
+    if (activeCount > ent.maxActiveUsers) {
+      return NextResponse.json(
+        {
+          error: `Paket langganan Anda membatasi ${ent.maxActiveUsers} dokter aktif. Nonaktifkan dokter lain atau tingkatkan paket untuk menambah.`,
+          upsell: 'seats',
+        },
+        { status: 403 },
+      )
+    }
+  }
 
   // Update clinic info
   await db.from('clinics').update({

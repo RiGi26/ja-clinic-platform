@@ -7,7 +7,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'], entitlement: 'billing' })
   if (!auth.ok) return auth.res
   const { db, clinicId } = auth
 

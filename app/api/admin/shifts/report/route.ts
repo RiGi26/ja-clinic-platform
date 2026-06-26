@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { guardEntitlementApi } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ async function getAdminClinicId() {
 export async function GET(request: Request) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'shifts'); if (gate) return gate
 
   const { searchParams } = new URL(request.url)
   const month    = searchParams.get('month') ?? new Date().toISOString().slice(0, 7)

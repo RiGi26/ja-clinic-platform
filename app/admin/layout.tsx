@@ -1,10 +1,12 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { ReactNode } from 'react'
+import { ReactNode, Suspense } from 'react'
 import DemoBanner from '@/components/DemoBanner'
 import ExpiredBanner from '@/components/ExpiredBanner'
+import UpsellBanner from '@/components/UpsellBanner'
 import { isDemoSession } from '@/lib/is-demo-session'
 import { getClinicPlanStatus } from '@/lib/plan-guard'
+import { getClinicEntitlements } from '@/lib/clinic-entitlements'
 import ClinicClientLayout from '@/components/ClinicClientLayout'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +32,10 @@ async function getAdmin() {
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const admin  = await getAdmin()
   const isDemo = await isDemoSession()
-  const planStatus = await getClinicPlanStatus(admin.clinic_id)
+  const [planStatus, ent] = await Promise.all([
+    getClinicPlanStatus(admin.clinic_id),
+    getClinicEntitlements(admin.clinic_id),
+  ])
 
   return (
     <div className="h-screen flex overflow-hidden bg-bg text-text">
@@ -43,11 +48,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           isTrial={planStatus.isTrial}
         />
       )}
-      
-      <ClinicClientLayout 
-        role="admin" 
-        userName={admin.full_name} 
+      <Suspense fallback={null}>
+        <UpsellBanner />
+      </Suspense>
+
+      <ClinicClientLayout
+        role="admin"
+        userName={admin.full_name}
         userSub="Administrator"
+        entitlements={ent.entitlements}
       >
         {children}
       </ClinicClientLayout>

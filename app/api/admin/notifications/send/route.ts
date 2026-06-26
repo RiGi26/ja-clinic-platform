@@ -31,7 +31,7 @@ function fmtTime(iso: string) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireApiUser({ roles: ['admin', 'receptionist'] })
+  const auth = await requireApiUser({ roles: ['admin', 'receptionist'], entitlement: 'notifications' })
   if (!auth.ok) return auth.res
   const { db, clinicId } = auth
 

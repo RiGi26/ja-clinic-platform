@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { guardEntitlementApi } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export async function GET(
 ) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'pharmacy'); if (gate) return gate
 
   const { id } = await params
   const db = createAdminClient()
@@ -40,6 +42,7 @@ export async function PATCH(
 ) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'pharmacy'); if (gate) return gate
 
   const { id }  = await params
   const body     = await request.json() as {
@@ -94,6 +97,7 @@ export async function DELETE(
 ) {
   const clinicId = await getAdminClinicId()
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await guardEntitlementApi(clinicId, 'pharmacy'); if (gate) return gate
 
   const { id } = await params
   const db = createAdminClient()

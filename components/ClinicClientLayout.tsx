@@ -2,15 +2,18 @@
 
 import { ReactNode, useState, useEffect } from 'react'
 import ClinicSidebar from './ClinicSidebar'
+import type { EntitlementKey } from '@/lib/entitlements'
 
 interface ClinicClientLayoutProps {
   children: ReactNode
   role: 'admin' | 'doctor' | 'patient' | 'receptionist'
   userName: string
   userSub?: string
+  /** Features the clinic's package grants — gated nav items outside this set are hidden. */
+  entitlements?: EntitlementKey[]
 }
 
-export default function ClinicClientLayout({ children, role, userName, userSub }: ClinicClientLayoutProps) {
+export default function ClinicClientLayout({ children, role, userName, userSub, entitlements }: ClinicClientLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -31,6 +34,7 @@ export default function ClinicClientLayout({ children, role, userName, userSub }
         role={role}
         userName={userName}
         userSub={userSub}
+        entitlements={entitlements}
         isCollapsed={isCollapsed}
         setIsCollapsed={handleSetCollapsed}
       />
