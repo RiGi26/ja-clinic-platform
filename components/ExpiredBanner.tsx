@@ -1,7 +1,5 @@
 'use client'
 
-const WA_URL = 'https://wa.me/6281296917963'
-
 type Props = {
   plan: string
   daysLeft: number | null
@@ -14,15 +12,13 @@ export default function ExpiredBanner({ isExpired, isTrial, daysLeft }: Props) {
     return (
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-red-500 text-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
         <span className="text-sm font-semibold text-center sm:text-left">
-          ⚠️ Masa aktif klinik Anda telah berakhir. Hubungi tim kami untuk melanjutkan.
+          ⚠️ Masa aktif klinik Anda telah berakhir. Pilih paket untuk melanjutkan.
         </span>
         <a
-          href={WA_URL}
-          target="_blank"
-          rel="noreferrer"
+          href="/admin/langganan"
           className="shrink-0 bg-white text-red-600 font-bold rounded-xl px-4 py-2 text-sm hover:bg-red-50 transition-colors"
         >
-          Hubungi via WhatsApp →
+          Perpanjang Langganan →
         </a>
       </div>
     )
@@ -32,15 +28,13 @@ export default function ExpiredBanner({ isExpired, isTrial, daysLeft }: Props) {
     return (
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
         <span className="text-sm font-semibold text-center sm:text-left">
-          ⏳ Trial Anda berakhir dalam {daysLeft} hari. Hubungi kami untuk melanjutkan.
+          ⏳ Trial Anda berakhir dalam {daysLeft} hari. Pilih paket untuk melanjutkan.
         </span>
         <a
-          href={WA_URL}
-          target="_blank"
-          rel="noreferrer"
+          href="/admin/langganan"
           className="shrink-0 bg-white text-amber-600 font-bold rounded-xl px-4 py-2 text-sm hover:bg-amber-50 transition-colors"
         >
-          Hubungi Tim Kami →
+          Perpanjang Sekarang →
         </a>
       </div>
     )
