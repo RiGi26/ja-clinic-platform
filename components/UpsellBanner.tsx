@@ -5,8 +5,6 @@ import { Lock, X } from 'lucide-react'
 import { useState } from 'react'
 import type { EntitlementKey } from '@/lib/entitlements'
 
-const WA_URL = 'https://wa.me/6281296917963'
-
 const FEATURE_LABEL: Record<EntitlementKey, string> = {
   appointments:  'Antrian & Janji Temu',
   patients:      'Database Pasien',
@@ -47,9 +45,7 @@ export default function UpsellBanner() {
         </div>
         <p className="text-sm font-medium flex-1 leading-snug">{message}</p>
         <a
-          href={WA_URL}
-          target="_blank"
-          rel="noreferrer"
+          href="/admin/langganan"
           className="shrink-0 bg-amber-600 text-white font-bold rounded-xl px-3.5 py-2 text-xs hover:bg-amber-700 transition-colors"
         >
           Tingkatkan Paket
