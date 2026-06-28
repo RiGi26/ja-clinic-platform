@@ -117,6 +117,8 @@ export default function ReceptionistSidebar({ userName }: { userName: string }) 
           )}
         </div>
         <button onClick={() => setCollapsed(c => !c)}
+          aria-label={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+          aria-expanded={!collapsed}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-white/30 hover:bg-white/10 hover:text-white/60 transition-all text-xs font-bold"
           title={collapsed ? 'Perluas' : 'Perkecil'}>
           <ChevronLeft size={15} className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />

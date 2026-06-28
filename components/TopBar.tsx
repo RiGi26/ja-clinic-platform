@@ -26,7 +26,7 @@ export default function TopBar({ title, subtitle, showSearch = true }: TopBarPro
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           {showSearch && (
             <div className="relative hidden sm:block group">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#0071E3] transition-colors" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-[#0071E3] transition-colors" />
               <input
                 type="text"
                 placeholder="Cari sesuatu..."
@@ -37,12 +37,12 @@ export default function TopBar({ title, subtitle, showSearch = true }: TopBarPro
           
           {/* Mobile Search Icon (Shows only on small screens) */}
           {showSearch && (
-            <button className="sm:hidden p-2.5 text-gray-500 hover:text-[#1D1D1F] bg-[#F5F5F7] hover:bg-[#E8E8ED] rounded-full transition-colors active:scale-95">
+            <button aria-label="Cari" className="sm:hidden p-2.5 text-gray-500 hover:text-[#1D1D1F] bg-[#F5F5F7] hover:bg-[#E8E8ED] rounded-full transition-colors active:scale-95">
               <Search size={18} />
             </button>
           )}
 
-          <button className="relative p-2.5 text-gray-500 hover:text-[#1D1D1F] bg-[#F5F5F7] hover:bg-[#E8E8ED] rounded-full transition-colors active:scale-95">
+          <button aria-label="Notifikasi" className="relative p-2.5 text-gray-500 hover:text-[#1D1D1F] bg-[#F5F5F7] hover:bg-[#E8E8ED] rounded-full transition-colors active:scale-95">
             <Bell size={18} />
             <span className="absolute top-2 right-2.5 w-2 h-2 bg-[#FF3B30] border-2 border-[#F5F5F7] rounded-full animate-pulse" />
           </button>

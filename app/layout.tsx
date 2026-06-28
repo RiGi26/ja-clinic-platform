@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { tenantConfig } from '@/lib/tenant-config'
 
-const inter = Inter({ subsets: ['latin'], display: 'swap' })
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: tenantConfig.name,
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${inter.className} h-full antialiased`}>
+    <html lang="id" className={`${inter.variable} ${inter.className} h-full antialiased`}>
       <body className="min-h-full">{children}</body>
     </html>
   )
