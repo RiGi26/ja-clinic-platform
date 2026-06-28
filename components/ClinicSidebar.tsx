@@ -137,7 +137,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
       {groups.map((group, gIdx) => (
         <div key={gIdx} className="space-y-1">
           {!isCollapsed && (
-            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-2">
+            <p className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] mb-2">
               {group.label}
             </p>
           )}
@@ -174,7 +174,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
       {/* ─── Mobile Top Bar ───────────────────────────────────────── */}
       <header className="md:hidden fixed top-0 w-full h-14 bg-white/80 backdrop-blur-xl border-b border-black/5 z-30 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setMobileOpen(true)} className="p-2 -ml-2 text-gray-600 rounded-lg hover:bg-black/5">
+          <button onClick={() => setMobileOpen(true)} aria-label="Buka menu navigasi" className="p-2 -ml-2 text-gray-600 rounded-lg hover:bg-black/5">
             <Menu size={22} />
           </button>
           <Image src="/logo-rocket.png" alt="Webzoka" width={28} height={28} className="object-contain" />
@@ -203,7 +203,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
         {/* Drawer Header */}
         <div className="px-5 pt-8 pb-5 flex items-center justify-between h-24 shrink-0">
           <img src="/logo-wide-clean.png" alt="Webzoka — Part of Japan Arena Corp" className="w-[180px] max-w-[72%] max-h-[56px] object-contain" />
-          <button onClick={() => setMobileOpen(false)} className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-black/5 transition-colors">
+          <button onClick={() => setMobileOpen(false)} aria-label="Tutup menu navigasi" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-black/5 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -243,7 +243,9 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
         {/* Collapse Toggle */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-10 bg-white border border-black/10 rounded-full p-1.5 shadow-sm text-gray-400 hover:text-black hover:shadow-md z-[60] transform transition-all hover:scale-110 active:scale-90"
+          aria-label={isCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+          aria-expanded={!isCollapsed}
+          className="absolute -right-3 top-10 bg-white border border-black/10 rounded-full p-1.5 shadow-sm text-gray-500 hover:text-black hover:shadow-md z-[60] transform transition-all hover:scale-110 active:scale-90"
         >
           {isCollapsed ? <ChevronRight size={14} strokeWidth={2.5}/> : <ChevronLeft size={14} strokeWidth={2.5}/>}
         </button>
@@ -276,7 +278,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
         <div className="p-4 border-t border-black/5 bg-white/50 shrink-0 space-y-1">
           <a 
             href="https://www.webzoka.com"
-            className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-4'} py-2 rounded-xl text-[11px] font-bold text-gray-400 hover:bg-black/5 hover:text-gray-900 transition-all`}
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-4'} py-2 rounded-xl text-[11px] font-bold text-gray-500 hover:bg-black/5 hover:text-gray-900 transition-all`}
             title={isCollapsed ? 'Portal Utama' : undefined}
           >
             <LayoutGrid size={14} />

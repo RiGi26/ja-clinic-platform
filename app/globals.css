@@ -24,8 +24,10 @@
   --color-text-muted:       #86868B;
 
   /* ── Typography ── */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  /* Inter is loaded via next/font in layout.tsx (exposes --font-inter); fall back to the
+     Apple system stack so the already-loaded webfont actually renders. */
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-display: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
 
   /* ── Radius (Apple Soft) ── */
   --radius-2xl:    1rem;
@@ -51,6 +53,13 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Accessibility: visible keyboard focus on links/buttons/inputs ── */
+:focus-visible {
+  outline: 2px solid var(--color-primary, #0071E3);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* ── Global Utilities ──────────────────────────────── */
@@ -80,6 +89,14 @@ body {
 
   .sf-display { font-weight: 600; letter-spacing: -0.015em; }
   .sf-display-heavy { font-weight: 700; letter-spacing: -0.02em; }
+
+  /* ─── Apple Shadow utilities (consumed the CSS vars above; were used but never defined) ─── */
+  .apple-shadow { box-shadow: var(--shadow-apple); }
+  .apple-shadow-hover { transition: box-shadow 0.2s ease; }
+  .apple-shadow-hover:hover { box-shadow: var(--shadow-apple-hover); }
+
+  /* ─── Balanced wrapping for short headings ─── */
+  .text-mobile-balance { text-wrap: balance; }
 
   /* ─── High Performance Skeleton (Pure CSS) ─── */
   .skeleton {
