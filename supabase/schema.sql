@@ -254,6 +254,63 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   CONSTRAINT notifications_pkey PRIMARY KEY (id)
 );
 
+-- ── Schema-rot parity tables (created manually pre-repo; formalized in 011) ──
+CREATE TABLE IF NOT EXISTS public.booking_links (
+  id         UUID NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id  UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  slug       TEXT NOT NULL UNIQUE,
+  is_active  BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT booking_links_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.medical_letters (
+  id              UUID NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id       UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  patient_id      UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+  doctor_id       UUID REFERENCES public.doctors(id) ON DELETE SET NULL,
+  appointment_id  UUID REFERENCES public.appointments(id) ON DELETE SET NULL,
+  type            TEXT NOT NULL CHECK (type IN ('sakit','sehat','rujukan')),
+  letter_number   TEXT NOT NULL,
+  diagnosis       TEXT,
+  notes           TEXT,
+  sick_days       INTEGER,
+  sick_from       DATE,
+  sick_until      DATE,
+  referred_to     TEXT,
+  referral_reason TEXT,
+  purpose         TEXT,
+  is_healthy      BOOLEAN DEFAULT true,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT medical_letters_pkey PRIMARY KEY (id),
+  CONSTRAINT medical_letters_clinic_id_letter_number_key UNIQUE (clinic_id, letter_number)
+);
+
+CREATE TABLE IF NOT EXISTS public.shift_templates (
+  id          UUID NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id   UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+  shift       TEXT NOT NULL CHECK (shift IN ('pagi','siang','malam','libur')),
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT shift_templates_pkey PRIMARY KEY (id),
+  CONSTRAINT shift_templates_clinic_id_user_id_day_of_week_key UNIQUE (clinic_id, user_id, day_of_week)
+);
+
+CREATE TABLE IF NOT EXISTS public.staff_shifts (
+  id         UUID NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id  UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  date       DATE NOT NULL,
+  shift      TEXT NOT NULL CHECK (shift IN ('pagi','siang','malam','libur')),
+  status     TEXT NOT NULL DEFAULT 'hadir' CHECK (status IN ('hadir','izin','sakit','alpha','libur')),
+  notes      TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT staff_shifts_pkey PRIMARY KEY (id),
+  CONSTRAINT staff_shifts_clinic_id_user_id_date_key UNIQUE (clinic_id, user_id, date)
+);
+
 -- ── RLS ────────────────────────────────────────────────────────────────
 ALTER TABLE public.clinics            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users              ENABLE ROW LEVEL SECURITY;
@@ -269,6 +326,10 @@ ALTER TABLE public.prescription_items    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medicine_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.billing            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.booking_links      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.medical_letters    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shift_templates    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.staff_shifts       ENABLE ROW LEVEL SECURITY;
 
 -- Service role bypass semua (untuk server-side queries)
 DO $$
@@ -278,7 +339,8 @@ BEGIN
     'clinics','users','doctors','patients','doctor_schedules',
     'queue_sessions','appointments','medical_records',
     'prescriptions','medicines','prescription_items','medicine_transactions',
-    'billing','notifications'
+    'billing','notifications',
+    'medical_letters','staff_shifts','shift_templates'
   ] LOOP
     EXECUTE format(
       'CREATE POLICY "service_role_bypass" ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true)',
@@ -286,6 +348,12 @@ BEGIN
     );
   END LOOP;
 END $$;
+
+-- booking_links: clinic-scoped authenticated policy (not service_role_bypass)
+CREATE POLICY "clinic_booking_links" ON public.booking_links FOR ALL
+  USING (clinic_id IN (
+    SELECT users.clinic_id FROM public.users WHERE users.id = (SELECT auth.uid())
+  ));
 
 -- ── Helper functions ────────────────────────────────────────────────────
 
@@ -318,6 +386,23 @@ BEGIN
   RETURN 'INV-' || period || '-' || LPAD(seq::TEXT, 4, '0');
 END;
 $$ LANGUAGE plpgsql;
+
+-- Auto-set updated_at on UPDATE (search_path '' hardened — body uses only NOW())
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS staff_shifts_updated_at ON public.staff_shifts;
+CREATE TRIGGER staff_shifts_updated_at
+  BEFORE UPDATE ON public.staff_shifts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ── Indexes (untuk performa query) ─────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_users_clinic       ON public.users(clinic_id);
