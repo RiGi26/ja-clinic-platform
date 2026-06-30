@@ -29,6 +29,20 @@ CREATE TABLE IF NOT EXISTS public.clinics (
   CONSTRAINT clinics_pkey PRIMARY KEY (id)
 );
 
+-- 0b. Locations / cabang (multi-branch). One branch per doctor; appointments
+-- carry their own branch. Backfill of existing rows lives in migration 012.
+CREATE TABLE IF NOT EXISTS public.locations (
+  id            UUID        NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id     UUID        NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  name          TEXT        NOT NULL,
+  address       TEXT,
+  phone         TEXT,
+  working_hours JSONB       DEFAULT '{}',
+  is_active     BOOLEAN     NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT locations_pkey PRIMARY KEY (id)
+);
+
 -- 1. Users (semua role per klinik)
 CREATE TABLE IF NOT EXISTS public.users (
   id         UUID        NOT NULL DEFAULT gen_random_uuid(),
@@ -50,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.users (
 CREATE TABLE IF NOT EXISTS public.doctors (
   id               UUID    NOT NULL DEFAULT gen_random_uuid(),
   clinic_id        UUID    NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  location_id      UUID    REFERENCES public.locations(id) ON DELETE RESTRICT,  -- cabang/home-branch (B1: nullable s/d B1d)
   user_id          UUID    REFERENCES public.users(id) ON DELETE SET NULL,
   full_name        TEXT    NOT NULL,  -- redundant tapi berguna untuk query cepat
   specialty        TEXT    NOT NULL,
@@ -114,6 +129,7 @@ CREATE TABLE IF NOT EXISTS public.queue_sessions (
 CREATE TABLE IF NOT EXISTS public.appointments (
   id            UUID    NOT NULL DEFAULT gen_random_uuid(),
   clinic_id     UUID    NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  location_id   UUID    REFERENCES public.locations(id) ON DELETE RESTRICT,  -- cabang kunjungan, historis (B1: nullable s/d B1d)
   patient_id    UUID    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   doctor_id     UUID    REFERENCES public.doctors(id) ON DELETE SET NULL,
   scheduled_at  TIMESTAMPTZ NOT NULL,
@@ -313,6 +329,7 @@ CREATE TABLE IF NOT EXISTS public.staff_shifts (
 
 -- ── RLS ────────────────────────────────────────────────────────────────
 ALTER TABLE public.clinics            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.locations          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.doctors            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.patients           ENABLE ROW LEVEL SECURITY;
@@ -339,7 +356,7 @@ BEGIN
     'clinics','users','doctors','patients','doctor_schedules',
     'queue_sessions','appointments','medical_records',
     'prescriptions','medicines','prescription_items','medicine_transactions',
-    'billing','notifications',
+    'billing','notifications','locations',
     'medical_letters','staff_shifts','shift_templates'
   ] LOOP
     EXECUTE format(
@@ -412,3 +429,6 @@ CREATE INDEX IF NOT EXISTS idx_appointments_clinic ON public.appointments(clinic
 CREATE INDEX IF NOT EXISTS idx_appointments_date  ON public.appointments(scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_billing_clinic     ON public.billing(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_medical_clinic     ON public.medical_records(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_locations_clinic_id      ON public.locations(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_location_id      ON public.doctors(location_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_location_id ON public.appointments(location_id);
