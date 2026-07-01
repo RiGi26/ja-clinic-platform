@@ -54,10 +54,23 @@ export async function POST(request: Request) {
 
   if (!info.patientId) return NextResponse.json({ error: 'Data pasien tidak ditemukan' }, { status: 400 })
 
-  const { doctor_id, scheduled_at, complaint } = await request.json()
+  const { doctor_id, scheduled_at, complaint, subscription_id } = await request.json()
   if (!doctor_id || !scheduled_at) return NextResponse.json({ error: 'doctor_id dan scheduled_at wajib' }, { status: 400 })
 
   const db = createAdminClient()
+
+  // If paying with a package, verify the subscription belongs to THIS patient
+  // (anti-IDOR — the consume RPC only checks the clinic) before drawing it down.
+  if (subscription_id) {
+    const { data: sub } = await db
+      .from('patient_package_subscriptions')
+      .select('id')
+      .eq('id', subscription_id)
+      .eq('clinic_id', info.clinicId)
+      .eq('patient_id', info.patientId)
+      .maybeSingle()
+    if (!sub) return NextResponse.json({ error: 'Paket tidak valid' }, { status: 400 })
+  }
 
   // Verify the doctor belongs to this clinic (anti-IDOR) and inherit their branch,
   // falling back to the clinic's default branch so location_id is always set.
@@ -101,6 +114,27 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Draw down a package session (atomic). If it can't be consumed (expired/
+  // depleted/race), roll back the just-created appointment so we never leave a
+  // package booking that didn't actually decrement.
+  let sessionsRemaining: number | null = null
+  if (subscription_id) {
+    const { data: consumed } = await db.rpc('consume_package_session', {
+      p_subscription_id: subscription_id,
+      p_clinic_id: info.clinicId,
+      p_appointment_id: data.id,
+    })
+    const c = consumed as { ok?: boolean; code?: string; sessions_remaining?: number } | null
+    if (!c?.ok) {
+      await db.from('appointments').delete().eq('id', data.id).eq('clinic_id', info.clinicId)
+      const msg = c?.code === 'expired' ? 'Paket sudah kedaluwarsa'
+        : c?.code === 'depleted' || c?.code === 'inactive' ? 'Sesi paket sudah habis'
+        : 'Paket tidak bisa dipakai, coba lagi'
+      return NextResponse.json({ error: msg }, { status: 409 })
+    }
+    sessionsRemaining = c.sessions_remaining ?? null
+  }
+
   if (info.userEmail) {
     Promise.all([
       db.from('patients').select('full_name').eq('id', info.patientId).single(),
@@ -128,5 +162,5 @@ export async function POST(request: Request) {
     }).catch(console.error)
   }
 
-  return NextResponse.json({ success: true, appointment: data })
+  return NextResponse.json({ success: true, appointment: data, sessions_remaining: sessionsRemaining })
 }

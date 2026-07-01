@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import TopBar from '@/components/TopBar'
-import { Star, ChevronLeft, ChevronRight, Loader2, CheckCircle } from 'lucide-react'
+import { Star, Loader2, CheckCircle } from 'lucide-react'
 
 const STEP_LABELS = ['Pilih Dokter', 'Pilih Jadwal', 'Konfirmasi']
 
@@ -12,6 +12,7 @@ type Doctor = {
   schedules: { day_of_week: number; start_time: string; end_time: string }[]
   availableToday: boolean
 }
+type Sub = { id: string; package_name: string; sessions_total: number; sessions_remaining: number; expires_at: string | null }
 
 function fmtRupiah(n: number) {
   if (n >= 1_000_000) return `Rp ${(n/1_000_000).toFixed(1).replace('.0','')}jt`
@@ -58,6 +59,9 @@ export default function BookingPage() {
   const [selectedDate,   setSelectedDate]   = useState<Date | null>(null)
   const [selectedTime,   setSelectedTime]   = useState<string | null>(null)
   const [keluhan,        setKeluhan]        = useState('')
+  const [subscriptions,  setSubscriptions]  = useState<Sub[]>([])
+  const [selectedSub,    setSelectedSub]    = useState<Sub | null>(null)
+  const [remaining,      setRemaining]      = useState<number | null>(null)
 
   const dates = generateDates(7)
 
@@ -66,6 +70,10 @@ export default function BookingPage() {
       .then(r => r.json())
       .then(d => { setDoctors(d.doctors ?? []); setLoading(false) })
       .catch(() => setLoading(false))
+    fetch('/api/patient/subscriptions')
+      .then(r => r.json())
+      .then(d => setSubscriptions(d.subscriptions ?? []))
+      .catch(() => {})
   }, [])
 
   const availableSlots = (() => {
@@ -98,16 +106,18 @@ export default function BookingPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        doctor_id   : selectedDoctor.id,
-        scheduled_at: dt.toISOString(),
-        complaint   : keluhan || null,
+        doctor_id     : selectedDoctor.id,
+        scheduled_at  : dt.toISOString(),
+        complaint     : keluhan || null,
+        subscription_id: selectedSub?.id ?? null,
       }),
     })
     const data = await res.json()
     setSubmitting(false)
     if (res.ok) {
+      setRemaining(typeof data.sessions_remaining === 'number' ? data.sessions_remaining : null)
       setSuccess(true)
-      setTimeout(() => router.push('/patient'), 2000)
+      setTimeout(() => router.push('/patient'), 2500)
     } else {
       setError(data.error ?? 'Gagal membuat appointment')
     }
@@ -121,7 +131,9 @@ export default function BookingPage() {
             <CheckCircle size={40} className="text-emerald-600" />
           </div>
           <h2 className="text-2xl font-black text-secondary">Appointment Terdaftar!</h2>
-          <p className="text-muted-foreground">Kembali ke dashboard...</p>
+          {remaining !== null
+            ? <p className="text-muted-foreground">1 sesi paket dipakai · <span className="font-bold text-secondary">{remaining} sesi tersisa</span></p>
+            : <p className="text-muted-foreground">Kembali ke dashboard...</p>}
         </div>
       </div>
     )
@@ -270,6 +282,28 @@ export default function BookingPage() {
                   <p className="text-sm font-bold text-primary">{fmtRupiah(selectedDoctor.consultation_fee)}</p>
                 </div>
               </div>
+
+              {subscriptions.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2">Bayar Dengan</p>
+                  <div className="space-y-2">
+                    <button type="button" onClick={() => setSelectedSub(null)}
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${!selectedSub ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary/30'}`}>
+                      <span className="font-bold text-sm text-secondary">Bayar biasa</span>
+                      <span className="text-xs text-muted-foreground ml-2">Konsultasi {fmtRupiah(selectedDoctor.consultation_fee)}</span>
+                    </button>
+                    {subscriptions.map(s => (
+                      <button key={s.id} type="button" onClick={() => setSelectedSub(s)}
+                        className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selectedSub?.id === s.id ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary/30'}`}>
+                        <span className="font-bold text-sm text-secondary">{s.package_name}</span>
+                        <span className="text-xs text-emerald-600 font-bold ml-2">{s.sessions_remaining}/{s.sessions_total} sesi tersisa</span>
+                      </button>
+                    ))}
+                  </div>
+                  {selectedSub && <p className="text-xs text-muted-foreground mt-2">1 sesi paket akan dipakai untuk kunjungan ini.</p>}
+                </div>
+              )}
+
               <div>
                 <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground block mb-2">Keluhan (opsional)</label>
                 <textarea value={keluhan} onChange={e => setKeluhan(e.target.value)} rows={3}
