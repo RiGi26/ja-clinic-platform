@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email'
+import { provisionCoreTenant } from '@/lib/core-provision'
+import { tierFeatures } from '@/lib/entitlements'
 import React from 'react'
 import WelcomePatient from '@/emails/WelcomePatient'
 
@@ -92,6 +94,44 @@ export async function POST(request: Request) {
     await db.auth.admin.deleteUser(authUser.user.id)
     await db.from('clinics').delete().eq('id', clinic.id)
     return NextResponse.json({ error: 'Gagal menyimpan profil: ' + userErr.message }, { status: 500 })
+  }
+
+  // Provision a matching Core tenant (billing SoR) so checkout/upgrade works later.
+  // Best-effort: signup must not depend on Core uptime; reconcile backfills.
+  const provision = await provisionCoreTenant({
+    slug,
+    name: clinic.name,
+    email: email.trim(),
+    phone: phone?.trim() || null,
+    linkedTenantId: clinic.id,
+  })
+  const coreTenantId = provision.ok ? provision.coreTenantId : null
+  if (!provision.ok) {
+    console.error('[register] Core provision failed (non-fatal):', provision.error)
+  }
+
+  // Seed a 14-day trial entitlement = full Pro features — ONLY when the clinic was
+  // provisioned in Core (billing is live). If provision failed (Core/env not ready
+  // yet), we deliberately DON'T write a row: the clinic then keeps legacy full
+  // access (behaviour-preserving) instead of getting a trial that would expire with
+  // no working checkout to renew it. Once Core sync runs, /api/billing/sync fills it.
+  if (coreTenantId) {
+    const { error: entErr } = await db.from('tenant_entitlements').upsert(
+      {
+        clinic_id:        clinic.id,
+        tier:             'pro',
+        entitlements:     tierFeatures('pro'),
+        max_active_users: null,
+        status:           'trial',
+        linked_tenant_id: coreTenantId,
+        synced_at:        new Date().toISOString(),
+        expires_at:       planExpiresAt,
+      },
+      { onConflict: 'clinic_id' },
+    )
+    if (entErr) {
+      console.error('[register] trial entitlement upsert failed (non-fatal):', entErr.message)
+    }
   }
 
   // Auto login
