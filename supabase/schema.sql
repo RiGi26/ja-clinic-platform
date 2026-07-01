@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.users (
 CREATE TABLE IF NOT EXISTS public.doctors (
   id               UUID    NOT NULL DEFAULT gen_random_uuid(),
   clinic_id        UUID    NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
-  location_id      UUID    REFERENCES public.locations(id) ON DELETE RESTRICT,  -- cabang/home-branch (B1: nullable s/d B1d)
+  location_id      UUID    NOT NULL REFERENCES public.locations(id) ON DELETE RESTRICT,  -- cabang/home-branch (B1d: NOT NULL)
   user_id          UUID    REFERENCES public.users(id) ON DELETE SET NULL,
   full_name        TEXT    NOT NULL,  -- redundant tapi berguna untuk query cepat
   specialty        TEXT    NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.queue_sessions (
 CREATE TABLE IF NOT EXISTS public.appointments (
   id            UUID    NOT NULL DEFAULT gen_random_uuid(),
   clinic_id     UUID    NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
-  location_id   UUID    REFERENCES public.locations(id) ON DELETE RESTRICT,  -- cabang kunjungan, historis (B1: nullable s/d B1d)
+  location_id   UUID    NOT NULL REFERENCES public.locations(id) ON DELETE RESTRICT,  -- cabang kunjungan, historis (B1d: NOT NULL)
   patient_id    UUID    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   doctor_id     UUID    REFERENCES public.doctors(id) ON DELETE SET NULL,
   scheduled_at  TIMESTAMPTZ NOT NULL,
