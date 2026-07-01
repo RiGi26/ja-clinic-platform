@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle2, ChevronRight, ChevronLeft, Check } from 'lucide-react'
@@ -47,6 +47,23 @@ export default function RegisterPage() {
   const [error,   setError]   = useState('')
   const [success, setSuccess] = useState(false)
 
+  // Subscribe intent from the pricing page (?intent=subscribe&tier=<coreTier>&period=).
+  // Read from the URL on mount (client-only) so a paid signup lands straight in
+  // checkout instead of the trial success card. tier = Core enum (starter|pro|enterprise).
+  const [subscribe, setSubscribe] = useState(false)
+  const [tier,      setTier]      = useState<string | null>(null)
+  const [period,    setPeriod]    = useState<'monthly' | 'yearly'>('monthly')
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    setSubscribe(q.get('intent') === 'subscribe')
+    const t = q.get('tier')
+    if (t) setTier(t)
+    if (q.get('period') === 'yearly') setPeriod('yearly')
+  }, [])
+
+  // Core enum tier → display label (Growth/Pro) for the subscribe copy.
+  const tierLabel = tier === 'enterprise' ? 'Pro' : tier === 'pro' ? 'Growth' : tier === 'starter' ? 'Starter' : null
+
   const slug = generateSlug(clinicName)
 
   function validateStep1(): string {
@@ -92,6 +109,14 @@ export default function RegisterPage() {
       if (!res.ok || !data.success) {
         setError(data.error ?? 'Registrasi gagal. Coba lagi.')
         setLoading(false)
+        return
+      }
+
+      // Paid signup → go straight to Midtrans checkout for the chosen tier
+      // (the API already auto-logged the admin in, so the session cookie is set).
+      // Keep `loading` true while the browser navigates away.
+      if (subscribe && tier) {
+        window.location.assign(`/api/billing/checkout?tier=${encodeURIComponent(tier)}&period=${period}`)
         return
       }
 
@@ -207,10 +232,16 @@ export default function RegisterPage() {
               {/* Badge + Heading */}
               <div className="mb-4">
                 <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">
-                  ✨ Gratis 14 hari — tanpa kartu kredit
+                  {subscribe && tierLabel
+                    ? `✨ Berlangganan paket ${tierLabel}`
+                    : '✨ Gratis 14 hari — tanpa kartu kredit'}
                 </span>
                 <h2 className="text-xl font-black text-[#0C2340] mb-0.5">Daftarkan Klinik Anda</h2>
-                <p className="text-xs text-gray-400">Isi data di bawah, klinik Anda langsung aktif.</p>
+                <p className="text-xs text-gray-400">
+                  {subscribe
+                    ? 'Buat akun klinik Anda, lalu lanjut ke pembayaran.'
+                    : 'Isi data di bawah, klinik Anda langsung aktif.'}
+                </p>
               </div>
 
               {/* Step indicator */}
@@ -353,7 +384,9 @@ export default function RegisterPage() {
                     <button type="submit" disabled={loading}
                       className="flex-1 py-3 rounded-xl text-white font-black text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       style={{ background: 'linear-gradient(135deg, #0A2342 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(8,145,178,0.35)' }}>
-                      {loading ? <><Loader2 size={16} className="animate-spin" /> Mendaftarkan...</> : 'Daftarkan Klinik 🏥'}
+                      {loading
+                        ? <><Loader2 size={16} className="animate-spin" /> Mendaftarkan...</>
+                        : subscribe ? 'Lanjut ke Pembayaran →' : 'Daftarkan Klinik 🏥'}
                     </button>
                   </div>
                 </form>
