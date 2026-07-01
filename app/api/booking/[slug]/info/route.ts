@@ -22,12 +22,21 @@ export async function GET(
 
   const clinic = link.clinics as any
 
-  const { data: doctors } = await db
-    .from('doctors')
-    .select('id, full_name, specialty')
-    .eq('clinic_id', link.clinic_id)
-    .eq('is_active', true)
-    .order('full_name')
+  const [{ data: doctors }, { data: locations }] = await Promise.all([
+    db
+      .from('doctors')
+      .select('id, full_name, specialty, location_id')
+      .eq('clinic_id', link.clinic_id)
+      .eq('is_active', true)
+      .order('full_name'),
+    // Active branches only — booking offers a branch step when a clinic has >1.
+    db
+      .from('locations')
+      .select('id, name, address')
+      .eq('clinic_id', link.clinic_id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true }),
+  ])
 
-  return NextResponse.json({ clinic, doctors: doctors ?? [] })
+  return NextResponse.json({ clinic, doctors: doctors ?? [], locations: locations ?? [] })
 }

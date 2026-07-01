@@ -106,10 +106,14 @@ export async function POST(req: NextRequest) {
       const { data: existDoc } = await db.from('doctors')
         .select('id').eq('clinic_id', clinicId).eq('user_id', userId).maybeSingle()
       if (!existDoc) {
+        // Inherit the clinic's default branch (lookup only — the seed owns creation).
+        const { data: defLoc } = await db.from('locations')
+          .select('id').eq('clinic_id', clinicId).order('created_at', { ascending: true }).limit(1).maybeSingle()
         await db.from('doctors').insert({
           clinic_id: clinicId, user_id: userId,
           full_name: cfg.name, specialty: 'Dokter Umum',
           consultation_fee: 150000, is_active: true,
+          location_id: defLoc?.id ?? null,
         })
       }
     }

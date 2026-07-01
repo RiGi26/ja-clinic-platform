@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ChevronLeft, Loader2, MapPin, Phone, Check } from 'lucide-react'
+import { ChevronLeft, Loader2, MapPin, Check } from 'lucide-react'
 import Image from 'next/image'
 
 type Clinic  = { id: string; name: string; address: string | null; phone: string | null; logo_url: string | null }
-type Doctor  = { id: string; full_name: string; specialty: string }
+type Doctor  = { id: string; full_name: string; specialty: string; location_id: string | null }
+type Branch  = { id: string; name: string; address: string | null }
 type Slot    = { time: string; available: boolean }
 
-const TOTAL_STEPS = 5
 const INPUT = 'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary transition-all bg-white'
 const LABEL = 'block text-sm font-bold text-gray-700 mb-2'
 
@@ -45,11 +45,13 @@ export default function BookingPage() {
   const [notFound,    setNotFound]    = useState(false)
   const [clinic,      setClinic]      = useState<Clinic | null>(null)
   const [doctors,     setDoctors]     = useState<Doctor[]>([])
+  const [branches,    setBranches]    = useState<Branch[]>([])
   const [slots,       setSlots]       = useState<Slot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [submitting,  setSubmitting]  = useState(false)
   const [step,        setStep]        = useState(1)
 
+  const [selBranch,   setSelBranch]   = useState<Branch | null>(null)
   const [selDoctor,   setSelDoctor]   = useState<Doctor | null>(null)
   const [selDate,     setSelDate]     = useState('')
   const [selTime,     setSelTime]     = useState('')
@@ -60,12 +62,25 @@ export default function BookingPage() {
 
   const dates = getAvailableDates()
 
+  // A doctor belongs to exactly one branch, so a "branch step" is only meaningful
+  // when the clinic has more than one active branch. Single-branch clinics keep
+  // the original 5-step flow untouched (zero regression).
+  const multiBranch = branches.length > 1
+  const stepKeys = multiBranch
+    ? ['branch', 'doctor', 'date', 'time', 'data', 'confirm']
+    : ['doctor', 'date', 'time', 'data', 'confirm']
+  const TOTAL_STEPS = stepKeys.length
+  const currentKey  = stepKeys[step - 1]
+  const visibleDoctors = multiBranch && selBranch
+    ? doctors.filter(d => d.location_id === selBranch.id)
+    : doctors
+
   useEffect(() => {
     fetch(`/api/booking/${slug}/info`)
       .then(r => r.json())
       .then(d => {
         if (d.error || !d.clinic) { setNotFound(true) }
-        else { setClinic(d.clinic); setDoctors(d.doctors ?? []) }
+        else { setClinic(d.clinic); setDoctors(d.doctors ?? []); setBranches(d.locations ?? []) }
       })
       .catch(() => setNotFound(true))
       .finally(() => setPageLoading(false))
@@ -108,12 +123,13 @@ export default function BookingPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ doctor_id: selDoctor!.id, date: selDate, time: selTime, ...form }),
     })
-    const data = await res.json() as { booking_code?: string; doctor_name?: string; date?: string; time?: string; patient_name?: string; clinic_name?: string; error?: string }
+    const data = await res.json() as { booking_code?: string; doctor_name?: string; date?: string; time?: string; patient_name?: string; clinic_name?: string; branch_name?: string; error?: string }
     if (res.ok && data.booking_code) {
       const p = new URLSearchParams({
         code: data.booking_code, doctor: data.doctor_name!, date: data.date!,
         time: data.time!, patient: data.patient_name!, clinic: data.clinic_name!,
       })
+      if (multiBranch && data.branch_name) p.set('branch', data.branch_name)
       router.push(`/booking/${slug}/confirmation?${p}`)
     } else {
       alert(data.error ?? 'Booking gagal, coba lagi')
@@ -188,36 +204,64 @@ export default function BookingPage() {
     </button>
   )
 
-  // ─── STEP 1: Pilih Dokter ─────────────────────────────────────────────
-  if (step === 1) return (
+  // ─── STEP (multi-branch only): Pilih Cabang ───────────────────────────
+  if (currentKey === 'branch') return (
     <div className="min-h-screen bg-[#F0F9FF]">
       {header}{progress}
-      {card('Pilih Dokter',
+      {card('Pilih Cabang',
         <div className="space-y-3">
-          {doctors.length === 0
-            ? <p className="text-gray-400 text-center py-8">Tidak ada dokter tersedia</p>
-            : doctors.map(d => (
-              <button key={d.id} onClick={() => setSelDoctor(d)}
-                className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${selDoctor?.id === d.id ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white hover:border-primary/30'}`}>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-black text-base flex-shrink-0">
-                  {d.full_name.split(' ').filter(w => w !== 'Dr.' && w !== 'dr.').map(w => w[0]).slice(0, 2).join('')}
-                </div>
-                <div className="flex-1">
-                  <p className="font-black text-gray-900">dr. {d.full_name}</p>
-                  <p className="text-sm text-gray-500">{d.specialty}</p>
-                </div>
-                {selDoctor?.id === d.id && <Check size={18} className="text-primary flex-shrink-0" />}
-              </button>
-            ))
-          }
+          {branches.map(b => (
+            <button key={b.id} onClick={() => { setSelBranch(b); if (selBranch?.id !== b.id) setSelDoctor(null) }}
+              className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${selBranch?.id === b.id ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white hover:border-primary/30'}`}>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white flex-shrink-0">
+                <MapPin size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-gray-900">{b.name}</p>
+                {b.address && <p className="text-sm text-gray-500 truncate">{b.address}</p>}
+              </div>
+              {selBranch?.id === b.id && <Check size={18} className="text-primary flex-shrink-0" />}
+            </button>
+          ))}
         </div>,
-        nextBtn('Pilih Tanggal →', !selDoctor, () => setStep(2))
+        nextBtn('Pilih Dokter →', !selBranch, () => setStep(s => s + 1))
       )}
     </div>
   )
 
-  // ─── STEP 2: Pilih Tanggal ─────────────────────────────────────────────
-  if (step === 2) return (
+  // ─── STEP: Pilih Dokter ───────────────────────────────────────────────
+  if (currentKey === 'doctor') return (
+    <div className="min-h-screen bg-[#F0F9FF]">
+      {header}{progress}
+      {card('Pilih Dokter',
+        <div>
+          {backBtn}
+          <div className="space-y-3">
+            {visibleDoctors.length === 0
+              ? <p className="text-gray-400 text-center py-8">Tidak ada dokter tersedia{multiBranch ? ' di cabang ini' : ''}</p>
+              : visibleDoctors.map(d => (
+                <button key={d.id} onClick={() => setSelDoctor(d)}
+                  className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${selDoctor?.id === d.id ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white hover:border-primary/30'}`}>
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-black text-base flex-shrink-0">
+                    {d.full_name.split(' ').filter(w => w !== 'Dr.' && w !== 'dr.').map(w => w[0]).slice(0, 2).join('')}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-gray-900">dr. {d.full_name}</p>
+                    <p className="text-sm text-gray-500">{d.specialty}</p>
+                  </div>
+                  {selDoctor?.id === d.id && <Check size={18} className="text-primary flex-shrink-0" />}
+                </button>
+              ))
+            }
+          </div>
+        </div>,
+        nextBtn('Pilih Tanggal →', !selDoctor, () => setStep(s => s + 1))
+      )}
+    </div>
+  )
+
+  // ─── STEP: Pilih Tanggal ───────────────────────────────────────────────
+  if (currentKey === 'date') return (
     <div className="min-h-screen bg-[#F0F9FF]">
       {header}{progress}
       {card('Pilih Tanggal',
@@ -234,13 +278,13 @@ export default function BookingPage() {
             ))}
           </div>
         </div>,
-        nextBtn('Pilih Jam →', !selDate, () => setStep(3))
+        nextBtn('Pilih Jam →', !selDate, () => setStep(s => s + 1))
       )}
     </div>
   )
 
-  // ─── STEP 3: Pilih Jam ─────────────────────────────────────────────────
-  if (step === 3) return (
+  // ─── STEP: Pilih Jam ────────────────────────────────────────────────────
+  if (currentKey === 'time') return (
     <div className="min-h-screen bg-[#F0F9FF]">
       {header}{progress}
       {card('Pilih Jam',
@@ -264,13 +308,13 @@ export default function BookingPage() {
               </div>
           }
         </div>,
-        nextBtn('Isi Data Diri →', !selTime, () => setStep(4))
+        nextBtn('Isi Data Diri →', !selTime, () => setStep(s => s + 1))
       )}
     </div>
   )
 
-  // ─── STEP 4: Data Diri ─────────────────────────────────────────────────
-  if (step === 4) return (
+  // ─── STEP: Data Diri ────────────────────────────────────────────────────
+  if (currentKey === 'data') return (
     <div className="min-h-screen bg-[#F0F9FF]">
       {header}{progress}
       {card('Data Diri',
@@ -318,12 +362,12 @@ export default function BookingPage() {
               placeholder="Ceritakan keluhan Anda..." className={`${INPUT} resize-none`} />
           </div>
         </div>,
-        nextBtn('Konfirmasi →', !form.no_hp || !form.nama_lengkap || !form.keluhan, () => setStep(5))
+        nextBtn('Konfirmasi →', !form.no_hp || !form.nama_lengkap || !form.keluhan, () => setStep(s => s + 1))
       )}
     </div>
   )
 
-  // ─── STEP 5: Konfirmasi ─────────────────────────────────────────────────
+  // ─── STEP: Konfirmasi ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#F0F9FF]">
       {header}{progress}
@@ -331,15 +375,16 @@ export default function BookingPage() {
         <div>
           {backBtn}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-            {[
+            {([
               ['Klinik',   clinic.name],
+              ...(multiBranch && selBranch ? [['Cabang', selBranch.name] as [string, string]] : []),
               ['Dokter',   `dr. ${selDoctor?.full_name}`],
               ['Tanggal',  fmtDate(selDate)],
               ['Jam',      `${selTime} WIB`],
               ['Pasien',   form.nama_lengkap],
               ['No. HP',   form.no_hp],
               ['Keluhan',  form.keluhan],
-            ].map(([label, value]) => (
+            ] as [string, string][]).map(([label, value]) => (
               <div key={label} className="flex items-start gap-3">
                 <p className="text-sm text-gray-500 w-20 flex-shrink-0">{label}</p>
                 <p className="text-sm font-bold text-gray-900 flex-1">{value}</p>
