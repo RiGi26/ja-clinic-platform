@@ -34,7 +34,7 @@ function fmtDt(iso: string) {
 }
 
 export default function SettingsPage() {
-  const [clinic, setClinic]     = useState({ name: '', address: '', phone: '', email: '', fonnte_token: '' })
+  const [clinic, setClinic]     = useState({ name: '', address: '', phone: '', email: '', fonnte_token: '', enable_physio: false })
   type BookingLink = { id: string; slug: string; is_active: boolean }
   const [bookingLink,  setBookingLink]  = useState<BookingLink | null>(null)
   const [linkLoading,  setLinkLoading]  = useState(false)
@@ -192,6 +192,22 @@ export default function SettingsPage() {
                 <label className={LABEL_CLS}>Alamat</label>
                 <textarea rows={2} value={clinic.address} onChange={e => setC('address', e.target.value)} placeholder="Alamat lengkap klinik" className={`${INPUT_CLS} resize-none`} />
               </div>
+            </div>
+
+            {/* Mode Fisioterapi (B3) */}
+            <div className="mt-5 pt-5 border-t border-gray-100 flex items-start justify-between gap-4">
+              <div>
+                <p className="font-bold text-secondary text-sm">Mode Fisioterapi</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Aktifkan pelacakan progres rehab: ROM, skala nyeri (VAS), latihan & foto sesi pada rekam medis.
+                </p>
+              </div>
+              <button type="button" onClick={() => setClinic(c => ({ ...c, enable_physio: !c.enable_physio }))}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex-shrink-0 ${
+                  clinic.enable_physio ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}>
+                {clinic.enable_physio ? <><ToggleRight size={16} /> Aktif</> : <><ToggleLeft size={16} /> Nonaktif</>}
+              </button>
             </div>
           </div>
 

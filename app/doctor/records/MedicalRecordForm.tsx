@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import TopBar from '@/components/TopBar'
-import { Plus, X, CheckCircle, AlertTriangle, Tag, Clock } from 'lucide-react'
+import { Plus, X, CheckCircle, AlertTriangle, Tag, Clock, Activity } from 'lucide-react'
 import PrescriptionForm from '@/components/PrescriptionForm'
+import SessionPhotoUpload from '@/components/SessionPhotoUpload'
 
 const INPUT = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white'
 const LABEL = 'text-[10px] uppercase tracking-widest font-bold text-muted-foreground block mb-2'
@@ -17,15 +18,19 @@ const ICD10_HINTS = [
   { code: 'I10',   label: 'Hipertensi' },  { code: 'E11',   label: 'DM Tipe 2' },
 ]
 
-type Tab = 'S' | 'O' | 'A' | 'P'
-const TABS: { id: Tab; label: string; desc: string }[] = [
+type Tab = 'S' | 'O' | 'A' | 'P' | 'Ph'
+const BASE_TABS: { id: Tab; label: string; desc: string }[] = [
   { id: 'S', label: 'S — Subjektif',  desc: 'Keluhan & anamnesis' },
   { id: 'O', label: 'O — Objektif',   desc: 'Vital signs & pemeriksaan' },
   { id: 'A', label: 'A — Assessment', desc: 'Diagnosis & ICD-10' },
   { id: 'P', label: 'P — Plan',       desc: 'Terapi & resep' },
 ]
+const PHYSIO_TAB = { id: 'Ph' as Tab, label: 'Fisio', desc: 'ROM, nyeri & latihan' }
+
+const JOINT_HINTS = ['Lutut', 'Bahu', 'Siku', 'Pergelangan Tangan', 'Pergelangan Kaki', 'Panggul', 'Leher', 'Punggung Bawah']
 
 type Med = { medication_name: string; dosage: string; frequency: string; duration: string; route: string; instructions: string }
+type RomRow = { joint: string; before: string; after: string }
 type Patient = {
   id: string; no_rm: string; full_name: string; date_of_birth: string | null
   gender: string | null; blood_type: string | null; allergies: string | null
@@ -125,13 +130,16 @@ function LetterQuickSection({ patientId, appointmentId, diagnosis }: {
   )
 }
 
-export default function MedicalRecordForm({ appointment, patient, history, clinicId }: {
+export default function MedicalRecordForm({ appointment, patient, history, clinicId, enablePhysio }: {
   appointment: { id: string; complaint: string | null; status?: string }
   patient: Patient
   history: HistoryItem[]
   clinicId?: string
+  enablePhysio?: boolean
 }) {
   const router = useRouter()
+  const TABS = enablePhysio ? [...BASE_TABS, PHYSIO_TAB] : BASE_TABS
+  const lastTabId = TABS[TABS.length - 1].id
   const [pending, startTrans] = useTransition()
   const [tab, setTab]         = useState<Tab>('S')
   const [saved, setSaved]     = useState(false)
@@ -161,6 +169,18 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
   const [meds, setMeds] = useState<Med[]>([
     { medication_name: '', dosage: '', frequency: '', duration: '', route: '', instructions: '' },
   ])
+  // Ph — Fisioterapi (B3)
+  const [romRows, setRomRows]           = useState<RomRow[]>([{ joint: '', before: '', after: '' }])
+  const [vasBefore, setVasBefore]       = useState('')
+  const [vasAfter, setVasAfter]         = useState('')
+  const [prescribedExercises, setPrescribedExercises] = useState('')
+  const [adherenceNotes, setAdherenceNotes]           = useState('')
+  const [nextVisitTarget, setNextVisitTarget]         = useState('')
+
+  const addRom    = () => setRomRows(r => [...r, { joint: '', before: '', after: '' }])
+  const removeRom = (i: number) => setRomRows(r => r.filter((_, idx) => idx !== i))
+  const updateRom = (i: number, field: keyof RomRow, v: string) =>
+    setRomRows(r => r.map((x, idx) => idx === i ? { ...x, [field]: v } : x))
 
   // Load draft on mount
   useEffect(() => {
@@ -184,6 +204,12 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
       if (typeof d.followUpDate   === 'string') setFollowUpDate(d.followUpDate)
       if (typeof d.referral       === 'string') setReferral(d.referral)
       if (Array.isArray(d.meds))                setMeds(d.meds as Med[])
+      if (Array.isArray(d.romRows))             setRomRows(d.romRows as RomRow[])
+      if (typeof d.vasBefore           === 'string') setVasBefore(d.vasBefore)
+      if (typeof d.vasAfter            === 'string') setVasAfter(d.vasAfter)
+      if (typeof d.prescribedExercises === 'string') setPrescribedExercises(d.prescribedExercises)
+      if (typeof d.adherenceNotes      === 'string') setAdherenceNotes(d.adherenceNotes)
+      if (typeof d.nextVisitTarget     === 'string') setNextVisitTarget(d.nextVisitTarget)
     } catch { /* ignore */ }
   }, [appointment.id])
 
@@ -191,7 +217,8 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
     complaint, soapSubjective, allergyNotes,
     bpSys, bpDia, temp, weight, height, heartRate, soapObjective,
     soapAssessment, icd10Codes, soapPlan, followUpDate, referral, meds,
-  }), [complaint, soapSubjective, allergyNotes, bpSys, bpDia, temp, weight, height, heartRate, soapObjective, soapAssessment, icd10Codes, soapPlan, followUpDate, referral, meds])
+    romRows, vasBefore, vasAfter, prescribedExercises, adherenceNotes, nextVisitTarget,
+  }), [complaint, soapSubjective, allergyNotes, bpSys, bpDia, temp, weight, height, heartRate, soapObjective, soapAssessment, icd10Codes, soapPlan, followUpDate, referral, meds, romRows, vasBefore, vasAfter, prescribedExercises, adherenceNotes, nextVisitTarget])
 
   // Auto-save every 30s
   useEffect(() => {
@@ -244,6 +271,16 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
           follow_up_date:    followUpDate   || null,
           referral:          referral       || null,
           medications:       meds.filter(m => m.medication_name.trim()),
+          ...(enablePhysio ? {
+            rom_entries: romRows
+              .filter(r => r.joint.trim())
+              .map(r => ({ joint: r.joint.trim(), before: r.before ? parseFloat(r.before) : null, after: r.after ? parseFloat(r.after) : null })),
+            vas_pain_before:      vasBefore ? parseInt(vasBefore) : null,
+            vas_pain_after:       vasAfter  ? parseInt(vasAfter)  : null,
+            prescribed_exercises: prescribedExercises || null,
+            adherence_notes:      adherenceNotes      || null,
+            next_visit_target:    nextVisitTarget     || null,
+          } : {}),
           complete,
         }),
       })
@@ -290,7 +327,7 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Tab nav */}
-              <div className="grid grid-cols-4 border-b border-gray-100">
+              <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}>
                 {TABS.map(t => (
                   <button key={t.id} onClick={() => setTab(t.id)}
                     className={`px-3 py-4 text-left transition-all ${tab === t.id ? 'bg-primary/5 border-b-2 border-primary' : 'hover:bg-gray-50'}`}>
@@ -467,6 +504,88 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
                   </div>
                 </div>
               )}
+
+              {/* Ph — Fisioterapi */}
+              {enablePhysio && tab === 'Ph' && (
+                <div className="p-6 space-y-6">
+                  {/* ROM per-sendi */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className={LABEL}>Range of Motion (ROM)</p>
+                        <p className="text-xs text-muted-foreground">Rentang gerak per sendi, sebelum & sesudah sesi (derajat)</p>
+                      </div>
+                      <button type="button" onClick={addRom}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors font-bold text-sm">
+                        <Plus size={14} /> Tambah Sendi
+                      </button>
+                    </div>
+                    <datalist id="joint-hints">
+                      {JOINT_HINTS.map(j => <option key={j} value={j} />)}
+                    </datalist>
+                    <div className="space-y-2">
+                      {romRows.map((r, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <input list="joint-hints" value={r.joint} onChange={e => updateRom(i, 'joint', e.target.value)}
+                            placeholder="Sendi (mis. Lutut kanan)" className={`${INPUT} flex-1`} />
+                          <input type="number" value={r.before} onChange={e => updateRom(i, 'before', e.target.value)}
+                            placeholder="Pra°" className={`${INPUT} w-20 text-center tabular-nums`} />
+                          <span className="text-muted-foreground flex-shrink-0">→</span>
+                          <input type="number" value={r.after} onChange={e => updateRom(i, 'after', e.target.value)}
+                            placeholder="Pasca°" className={`${INPUT} w-20 text-center tabular-nums`} />
+                          {romRows.length > 1 && (
+                            <button type="button" onClick={() => removeRom(i)} className="p-2 text-destructive hover:bg-destructive/10 rounded-xl flex-shrink-0">
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* VAS nyeri */}
+                  <div>
+                    <p className={LABEL}>Skala Nyeri (VAS 0–10)</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className={LABEL}>Sebelum Sesi</label>
+                        <input type="number" min={0} max={10} value={vasBefore} onChange={e => setVasBefore(e.target.value)}
+                          placeholder="0–10" className={`${INPUT} text-center tabular-nums`} />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Sesudah Sesi</label>
+                        <input type="number" min={0} max={10} value={vasAfter} onChange={e => setVasAfter(e.target.value)}
+                          placeholder="0–10" className={`${INPUT} text-center tabular-nums`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={LABEL}>Latihan Diresepkan (Home Exercise Program)</label>
+                    <textarea rows={3} value={prescribedExercises} onChange={e => setPrescribedExercises(e.target.value)}
+                      placeholder="mis. Quadriceps set 3×10, hamstring stretch 3×30 detik, sepeda statis 10 menit..." className={TA} />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Catatan Kepatuhan</label>
+                    <textarea rows={2} value={adherenceNotes} onChange={e => setAdherenceNotes(e.target.value)}
+                      placeholder="mis. pasien rutin latihan di rumah, sedikit nyeri saat malam..." className={TA} />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Target Kunjungan Berikutnya</label>
+                    <textarea rows={2} value={nextVisitTarget} onChange={e => setNextVisitTarget(e.target.value)}
+                      placeholder="mis. tingkatkan fleksi lutut ke 120°, kurangi nyeri ke VAS 2" className={TA} />
+                  </div>
+
+                  {/* Foto sesi */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Activity size={14} className="text-primary" />
+                      <p className={`${LABEL} mb-0`}>Foto Sesi (Sebelum / Sesudah)</p>
+                    </div>
+                    <SessionPhotoUpload appointmentId={appointment.id} patientId={patient.id} />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pagination dots */}
@@ -481,7 +600,7 @@ export default function MedicalRecordForm({ appointment, patient, history, clini
                     className={`w-2.5 h-2.5 rounded-full transition-all ${tab === t.id ? 'bg-primary scale-125' : 'bg-gray-200'}`} />
                 ))}
               </div>
-              <button onClick={nextTab} disabled={tab === 'P'}
+              <button onClick={nextTab} disabled={tab === lastTabId}
                 className="px-4 py-2 text-sm font-bold text-secondary border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:invisible">
                 Berikutnya →
               </button>
