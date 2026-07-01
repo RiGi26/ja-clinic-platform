@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import TopBar from '@/components/TopBar'
 import { ArrowLeft, User, Phone, FileText, CreditCard, Loader2, Download } from 'lucide-react'
+import PhysioProgress, { type PhysioRecord, type PhysioPhoto } from './PhysioProgress'
 
 type Patient = {
   id: string; full_name: string; no_rm: string; phone: string | null
@@ -17,7 +18,7 @@ type MedRecord = { id: string; created_at: string; soap_assessment: string | nul
 type Bill      = { id: string; invoice_number: string; total: number; status: string; created_at: string }
 type Letter    = { id: string; letter_number: string; type: string; diagnosis: string | null; created_at: string; doctors: { full_name: string } | null }
 
-type Data = { patient: Patient; stats: Stats; appointments: Appointment[]; records: MedRecord[]; billing: Bill[]; letters: Letter[] }
+type Data = { patient: Patient; stats: Stats; appointments: Appointment[]; records: MedRecord[]; billing: Bill[]; letters: Letter[]; enable_physio?: boolean; physio_photos?: PhysioPhoto[] }
 
 const STATUS_STYLE: Record<string, string> = {
   selesai: 'bg-emerald-100 text-emerald-700', batal: 'bg-red-100 text-red-600',
@@ -45,7 +46,7 @@ function calcAge(dob: string | null) {
   return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 86400000))
 }
 
-type Tab = 'visits' | 'records' | 'billing' | 'letters'
+type Tab = 'visits' | 'records' | 'billing' | 'letters' | 'physio'
 
 export default function PatientDetailPage() {
   const params = useParams()
@@ -77,6 +78,8 @@ export default function PatientDetailPage() {
   )
 
   const { patient, stats, appointments, records, billing, letters } = data
+  const enablePhysio = !!data.enable_physio
+  const physioPhotos = data.physio_photos ?? []
   const age        = calcAge(patient.date_of_birth)
   const initials   = patient.full_name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
   const penjamin   = patient.jenis_penjamin ?? 'umum'
@@ -175,6 +178,7 @@ export default function PatientDetailPage() {
             {([
               { id: 'visits', label: 'Riwayat Kunjungan', count: appointments.length },
               { id: 'records', label: 'Rekam Medis', count: records.length },
+              ...(enablePhysio ? [{ id: 'physio' as Tab, label: 'Progres Fisio', count: physioPhotos.length }] : []),
               { id: 'billing', label: 'Tagihan', count: billing.length },
               { id: 'letters', label: 'Surat Keterangan', count: letters.length },
             ] as { id: Tab; label: string; count: number }[]).map(t => (
@@ -301,6 +305,11 @@ export default function PatientDetailPage() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* Progres Fisio Tab */}
+            {tab === 'physio' && enablePhysio && (
+              <PhysioProgress records={records as unknown as PhysioRecord[]} photos={physioPhotos} />
             )}
           </div>
         </div>

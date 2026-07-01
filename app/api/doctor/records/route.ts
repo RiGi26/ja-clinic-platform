@@ -43,6 +43,7 @@ export async function GET(request: Request) {
         soap_subjective, soap_objective, soap_assessment, soap_plan,
         icd10_codes, allergy_notes, follow_up_date, referral,
         blood_pressure_sys, blood_pressure_dia, temperature, weight, height, heart_rate,
+        rom_entries, vas_pain_before, vas_pain_after, prescribed_exercises, adherence_notes, next_visit_target,
         patients ( full_name, no_rm ),
         doctors  ( full_name ),
         prescriptions ( medication_name, dosage, frequency, duration, route, instructions, notes )
@@ -122,6 +123,13 @@ export async function POST(request: Request) {
     soap_plan?: string | null
     icd10_codes?: string[]
     allergy_notes?: string | null
+    // Physio (B3) — hanya terisi bila klinik enable_physio
+    rom_entries?: { joint: string; before: number | null; after: number | null }[]
+    vas_pain_before?: number | null
+    vas_pain_after?: number | null
+    prescribed_exercises?: string | null
+    adherence_notes?: string | null
+    next_visit_target?: string | null
     medications?: {
       medication_name: string
       dosage: string
@@ -140,6 +148,17 @@ export async function POST(request: Request) {
   }
 
   const db = createAdminClient()
+
+  // Physio sanitizers (B3): clamp VAS 0–10, keep only well-formed ROM rows.
+  const clampVas = (v: number | null | undefined): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.min(10, Math.max(0, Math.round(v))) : null
+  const numOrNull = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : null
+  const romEntries = Array.isArray(body.rom_entries)
+    ? body.rom_entries
+        .filter(r => r && typeof r.joint === 'string' && r.joint.trim())
+        .map(r => ({ joint: r.joint.trim(), before: numOrNull(r.before), after: numOrNull(r.after) }))
+    : []
 
   // Block writes for expired/suspended clinics
   if ((await getClinicPlanStatus(info.clinicId)).isBlocked) {
@@ -176,11 +195,27 @@ export async function POST(request: Request) {
       soap_plan:          body.soap_plan ?? null,
       icd10_codes:        body.icd10_codes ?? [],
       allergy_notes:      body.allergy_notes ?? null,
+      rom_entries:          romEntries,
+      vas_pain_before:      clampVas(body.vas_pain_before),
+      vas_pain_after:       clampVas(body.vas_pain_after),
+      prescribed_exercises: body.prescribed_exercises ?? null,
+      adherence_notes:      body.adherence_notes ?? null,
+      next_visit_target:    body.next_visit_target ?? null,
     })
     .select('id')
     .single()
 
   if (recErr) return NextResponse.json({ error: recErr.message }, { status: 500 })
+
+  // Backfill: attach any photos already uploaded for this visit to the new record.
+  if (record) {
+    await db
+      .from('visit_photos')
+      .update({ medical_record_id: record.id })
+      .eq('appointment_id', appointment_id)
+      .eq('clinic_id', info.clinicId)
+      .is('medical_record_id', null)
+  }
 
   if (body.medications && body.medications.length > 0 && record) {
     const prescRows = body.medications

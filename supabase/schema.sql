@@ -479,3 +479,37 @@ CREATE INDEX IF NOT EXISTS idx_pps_clinic_id                   ON public.patient
 CREATE INDEX IF NOT EXISTS idx_pps_patient_id                  ON public.patient_package_subscriptions(patient_id);
 CREATE INDEX IF NOT EXISTS idx_pps_package_id                  ON public.patient_package_subscriptions(package_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_subscription_id    ON public.appointments(subscription_id);
+
+-- ── Progress tracking fisio (B3, migration 015) ─────────────────────────────
+-- Feature-gated per clinic. Per-session physio fields live on medical_records;
+-- session photos in visit_photos (private storage bucket, defined in migration
+-- 015, not mirrored here). Behavior-preserving: all additive/nullable.
+ALTER TABLE public.clinics
+  ADD COLUMN IF NOT EXISTS enable_physio BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE public.medical_records
+  ADD COLUMN IF NOT EXISTS rom_entries          JSONB    DEFAULT '[]'::jsonb,  -- [{joint, before, after}] derajat
+  ADD COLUMN IF NOT EXISTS vas_pain_before      SMALLINT CHECK (vas_pain_before BETWEEN 0 AND 10),
+  ADD COLUMN IF NOT EXISTS vas_pain_after       SMALLINT CHECK (vas_pain_after  BETWEEN 0 AND 10),
+  ADD COLUMN IF NOT EXISTS prescribed_exercises TEXT,
+  ADD COLUMN IF NOT EXISTS adherence_notes      TEXT,
+  ADD COLUMN IF NOT EXISTS next_visit_target    TEXT;
+
+CREATE TABLE IF NOT EXISTS public.visit_photos (
+  id                UUID        NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id         UUID        NOT NULL REFERENCES public.clinics(id)         ON DELETE CASCADE,
+  patient_id        UUID        NOT NULL REFERENCES public.patients(id)        ON DELETE CASCADE,
+  appointment_id    UUID        REFERENCES public.appointments(id)             ON DELETE SET NULL,
+  medical_record_id UUID        REFERENCES public.medical_records(id)          ON DELETE SET NULL,
+  doctor_id         UUID        REFERENCES public.doctors(id)                  ON DELETE SET NULL,
+  storage_path      TEXT        NOT NULL,
+  phase             TEXT        NOT NULL DEFAULT 'progress' CHECK (phase IN ('before','after','progress')),
+  caption           TEXT,
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT visit_photos_pkey PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS idx_visit_photos_clinic_id         ON public.visit_photos(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_visit_photos_patient_id        ON public.visit_photos(patient_id);
+CREATE INDEX IF NOT EXISTS idx_visit_photos_appointment_id    ON public.visit_photos(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_visit_photos_medical_record_id ON public.visit_photos(medical_record_id);
+CREATE INDEX IF NOT EXISTS idx_visit_photos_doctor_id         ON public.visit_photos(doctor_id);

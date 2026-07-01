@@ -10,7 +10,7 @@ export async function GET() {
   const { db, clinicId } = auth
 
   const [{ data: clinic }, { data: doctors }, { data: locations }] = await Promise.all([
-    db.from('clinics').select('name, address, phone, email, fonnte_token').eq('id', clinicId).single(),
+    db.from('clinics').select('name, address, phone, email, fonnte_token, enable_physio').eq('id', clinicId).single(),
     db.from('doctors').select('id, full_name, specialty, consultation_fee, is_active, location_id').eq('clinic_id', clinicId).order('full_name'),
     db.from('locations').select('id, name, is_active').eq('clinic_id', clinicId).order('created_at', { ascending: true }),
   ])
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     phone: clinic.phone,
     email: clinic.email,
     ...(clinic.fonnte_token !== undefined ? { fonnte_token: clinic.fonnte_token } : {}),
+    ...(clinic.enable_physio !== undefined ? { enable_physio: !!clinic.enable_physio } : {}),
   }).eq('id', clinicId)
 
   // Upsert doctors — scoped to this clinic so a foreign doctor id can't be overwritten

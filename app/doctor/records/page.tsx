@@ -19,6 +19,9 @@ export default async function MedicalRecordPage({
   const db  = createAdminClient()
   const cid = user.clinic_id
 
+  const { data: clinic } = await db.from('clinics').select('enable_physio').eq('id', cid).single()
+  const enablePhysio = !!clinic?.enable_physio
+
   // ── Form mode: ?apt=xxx ──────────────────────────────────────────────────
   if (aptId) {
     const { data: apt } = await db
@@ -50,6 +53,7 @@ export default async function MedicalRecordPage({
         appointment={apt as { id: string; complaint: string | null }}
         patient={patient as Parameters<typeof MedicalRecordForm>[0]['patient']}
         history={(history ?? []) as unknown as Parameters<typeof MedicalRecordForm>[0]['history']}
+        enablePhysio={enablePhysio}
       />
     )
   }
