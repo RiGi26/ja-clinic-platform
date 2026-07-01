@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
   ClipboardList, BarChart3, Tag, FileCheck, Pill, CalendarCheck, ChevronRight,
-  UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid, Sparkles, Building2,
+  UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid, Sparkles, Building2, Layers,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { EntitlementKey } from '@/lib/entitlements'
@@ -40,6 +40,7 @@ const NAV_GROUPS: Record<Role, { label: string; items: NavItem[] }[]> = {
       label: 'Layanan & Stok',
       items: [
         { href: '/admin/treatments',      Icon: Tag,             label: 'Tindakan & Tarif'   },
+        { href: '/admin/packages',        Icon: Layers,          label: 'Paket Sesi'         },
         { href: '/admin/medicines',       Icon: Pill,            label: 'Stok Obat (Apotek)', ent: 'pharmacy' },
         { href: '/admin/medical-letters', Icon: FileCheck,       label: 'Surat Keterangan'   },
       ]
