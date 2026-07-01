@@ -432,3 +432,50 @@ CREATE INDEX IF NOT EXISTS idx_medical_clinic     ON public.medical_records(clin
 CREATE INDEX IF NOT EXISTS idx_locations_clinic_id      ON public.locations(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_doctors_location_id      ON public.doctors(location_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_location_id ON public.appointments(location_id);
+
+-- ── Paket multi-sesi (B2, migration 014) ────────────────────────────────
+-- Catalog (service_packages) + per-patient purchase (subscriptions). A visit
+-- draws down a subscription atomically via the consume_package_session RPC —
+-- defined in migration 014, not mirrored here (like the 007 stock RPCs).
+CREATE TABLE IF NOT EXISTS public.service_packages (
+  id            UUID        NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id     UUID        NOT NULL REFERENCES public.clinics(id)    ON DELETE CASCADE,
+  treatment_id  UUID        REFERENCES public.treatments(id)          ON DELETE SET NULL,  -- opsional: layanan yg dicakup (null = umum)
+  name          TEXT        NOT NULL,
+  num_sessions  INTEGER     NOT NULL CHECK (num_sessions > 0),
+  price         INTEGER     NOT NULL DEFAULT 0 CHECK (price >= 0),
+  validity_days INTEGER     CHECK (validity_days IS NULL OR validity_days > 0),            -- null = tanpa kedaluwarsa
+  is_active     BOOLEAN     NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT service_packages_pkey PRIMARY KEY (id)
+);
+
+-- sessions_total + price_paid = snapshot saat beli (edit katalog tak menulis ulang riwayat)
+CREATE TABLE IF NOT EXISTS public.patient_package_subscriptions (
+  id                 UUID        NOT NULL DEFAULT gen_random_uuid(),
+  clinic_id          UUID        NOT NULL REFERENCES public.clinics(id)          ON DELETE CASCADE,
+  patient_id         UUID        NOT NULL REFERENCES public.patients(id)         ON DELETE CASCADE,
+  package_id         UUID        NOT NULL REFERENCES public.service_packages(id) ON DELETE RESTRICT,
+  purchased_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  sessions_total     INTEGER     NOT NULL CHECK (sessions_total > 0),
+  sessions_remaining INTEGER     NOT NULL CHECK (sessions_remaining >= 0),
+  price_paid         INTEGER     NOT NULL DEFAULT 0 CHECK (price_paid >= 0),
+  expires_at         TIMESTAMPTZ,                                                          -- null = tanpa kedaluwarsa
+  status             TEXT        NOT NULL DEFAULT 'active'
+                                 CHECK (status IN ('active','completed','expired','cancelled')),
+  created_at         TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT patient_package_subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT remaining_le_total CHECK (sessions_remaining <= sessions_total)
+);
+
+-- appointments: kunjungan yg memakai satu sesi paket (null = bayar per-kunjungan)
+ALTER TABLE public.appointments
+  ADD COLUMN IF NOT EXISTS subscription_id UUID REFERENCES public.patient_package_subscriptions(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS session_number  INTEGER;
+
+CREATE INDEX IF NOT EXISTS idx_service_packages_clinic_id      ON public.service_packages(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_service_packages_treatment_id   ON public.service_packages(treatment_id);
+CREATE INDEX IF NOT EXISTS idx_pps_clinic_id                   ON public.patient_package_subscriptions(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_pps_patient_id                  ON public.patient_package_subscriptions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_pps_package_id                  ON public.patient_package_subscriptions(package_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_subscription_id    ON public.appointments(subscription_id);
