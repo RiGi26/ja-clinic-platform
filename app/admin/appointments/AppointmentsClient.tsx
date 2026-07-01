@@ -36,27 +36,31 @@ function avatarGradient(name: string) {
 
 type Apt = {
   id: string; scheduled_at: string; status: string; complaint: string|null
-  type: string; queue_number: number|null
+  type: string; queue_number: number|null; location_id: string|null
   patients: { id: string; no_rm: string; full_name: string; phone: string|null; gender: string|null } | null
   doctors: { id: string; full_name: string; specialty: string } | null
+  locations: { id: string; name: string } | null
 }
+type Branch = { id: string; name: string }
 
 const FILTERS = ['Semua','Menunggu','Dipanggil','Diperiksa','Selesai','Batal']
 
-export default function AppointmentsClient({ initial }: { initial: Apt[] }) {
+export default function AppointmentsClient({ initial, branches }: { initial: Apt[]; branches: Branch[] }) {
   const [apts, setApts]         = useState<Apt[]>(initial)
   const [filter, setFilter]     = useState('Semua')
+  const [branch, setBranch]     = useState('')
   const [search, setSearch]     = useState('')
   const [pending, startTransition] = useTransition()
 
   const filtered = apts.filter(a => {
     const matchFilter = filter === 'Semua' || STATUS_LABEL[a.status] === filter
+    const matchBranch = !branch || a.location_id === branch
     const q = search.toLowerCase()
     const matchSearch = !q ||
       (a.patients?.full_name.toLowerCase().includes(q)) ||
       (a.patients?.no_rm.toLowerCase().includes(q)) ||
       (a.doctors?.full_name.toLowerCase().includes(q))
-    return matchFilter && matchSearch
+    return matchFilter && matchBranch && matchSearch
   })
 
   async function updateStatus(id: string, newStatus: string) {
@@ -83,11 +87,21 @@ export default function AppointmentsClient({ initial }: { initial: Apt[] }) {
 
         {/* Filters + Search */}
         <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cari nama, No.RM, dokter..."
-              className="pl-11 pr-5 py-3 bg-white border border-gray-200 rounded-xl w-full sm:w-72 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" />
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Cari nama, No.RM, dokter..."
+                className="pl-11 pr-5 py-3 bg-white border border-gray-200 rounded-xl w-full sm:w-72 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" />
+            </div>
+            {branches.length > 1 && (
+              <select value={branch} onChange={e => setBranch(e.target.value)}
+                aria-label="Filter cabang"
+                className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+                <option value="">Semua Cabang</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
           </div>
           <Link href="/admin/appointments/walkin"
             className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-sm hover:bg-primary-hover transition-colors">
@@ -137,7 +151,7 @@ export default function AppointmentsClient({ initial }: { initial: Apt[] }) {
                           {apt.type === 'walkin' ? 'Walk-in' : 'Booking'}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{doctor} · {time}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{doctor} · {time}{branches.length > 1 && apt.locations?.name ? ` · ${apt.locations.name}` : ''}</p>
                       {apt.complaint && <p className="text-xs text-gray-400 truncate mt-0.5">{apt.complaint}</p>}
                     </div>
 

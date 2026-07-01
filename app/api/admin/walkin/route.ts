@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getClinicPlanStatus } from '@/lib/plan-guard'
-import { belongsToClinic } from '@/lib/api-auth'
 import { sendEmail } from '@/lib/email'
 import React from 'react'
 import AppointmentConfirmed from '@/emails/AppointmentConfirmed'
@@ -28,8 +27,14 @@ export async function POST(request: Request) {
   const { full_name, phone, gender, date_of_birth, doctor_id, complaint, time, email, jenis_kunjungan, no_bpjs } = await request.json()
   const clinicId = profile.clinic_id
 
-  // Cross-tenant guard: doctor must belong to this clinic
-  if (!(await belongsToClinic(db, 'doctors', doctor_id, clinicId))) {
+  // Cross-tenant guard + inherit the doctor's branch for this appointment
+  const { data: doctorRow } = await db
+    .from('doctors')
+    .select('location_id')
+    .eq('id', doctor_id)
+    .eq('clinic_id', clinicId)
+    .maybeSingle()
+  if (!doctorRow) {
     return NextResponse.json({ error: 'Dokter tidak ditemukan' }, { status: 404 })
   }
 
@@ -67,6 +72,7 @@ export async function POST(request: Request) {
 
   await db.from('appointments').insert({
     clinic_id: clinicId, patient_id: patient.id, doctor_id,
+    location_id: doctorRow.location_id ?? null,
     scheduled_at: scheduled.toISOString(),
     complaint: complaint || null,
     status: 'menunggu', type: 'walkin',

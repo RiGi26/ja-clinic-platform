@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireApiUser } from '@/lib/api-auth'
+import { requireApiUser, allBelongToClinic } from '@/lib/api-auth'
 import { getClinicEntitlements } from '@/lib/clinic-entitlements'
 
 export const dynamic = 'force-dynamic'
@@ -9,12 +9,13 @@ export async function GET() {
   if (!auth.ok) return auth.res
   const { db, clinicId } = auth
 
-  const [{ data: clinic }, { data: doctors }] = await Promise.all([
+  const [{ data: clinic }, { data: doctors }, { data: locations }] = await Promise.all([
     db.from('clinics').select('name, address, phone, email, fonnte_token').eq('id', clinicId).single(),
-    db.from('doctors').select('id, full_name, specialty, consultation_fee, is_active').eq('clinic_id', clinicId).order('full_name'),
+    db.from('doctors').select('id, full_name, specialty, consultation_fee, is_active, location_id').eq('clinic_id', clinicId).order('full_name'),
+    db.from('locations').select('id, name, is_active').eq('clinic_id', clinicId).order('created_at', { ascending: true }),
   ])
 
-  return NextResponse.json({ clinic: clinic ?? {}, doctors: doctors ?? [] })
+  return NextResponse.json({ clinic: clinic ?? {}, doctors: doctors ?? [], locations: locations ?? [] })
 }
 
 export async function POST(request: Request) {
@@ -41,6 +42,12 @@ export async function POST(request: Request) {
     }
   }
 
+  // Cross-tenant guard: every provided branch id must belong to this clinic.
+  const locIds = (doctors as { location_id?: string | null }[]).map(d => d.location_id).filter(Boolean) as string[]
+  if (locIds.length && !(await allBelongToClinic(db, 'locations', locIds, clinicId))) {
+    return NextResponse.json({ error: 'Cabang tidak valid' }, { status: 400 })
+  }
+
   // Update clinic info
   await db.from('clinics').update({
     name: clinic.name,
@@ -54,11 +61,11 @@ export async function POST(request: Request) {
   for (const doc of doctors) {
     if (doc.id) {
       await db.from('doctors')
-        .update({ full_name: doc.full_name, specialty: doc.specialty, consultation_fee: doc.consultation_fee, is_active: doc.is_active })
+        .update({ full_name: doc.full_name, specialty: doc.specialty, consultation_fee: doc.consultation_fee, is_active: doc.is_active, location_id: doc.location_id ?? null })
         .eq('id', doc.id)
         .eq('clinic_id', clinicId)
     } else {
-      await db.from('doctors').insert({ clinic_id: clinicId, full_name: doc.full_name, specialty: doc.specialty, consultation_fee: doc.consultation_fee, is_active: doc.is_active })
+      await db.from('doctors').insert({ clinic_id: clinicId, full_name: doc.full_name, specialty: doc.specialty, consultation_fee: doc.consultation_fee, is_active: doc.is_active, location_id: doc.location_id ?? null })
     }
   }
 
