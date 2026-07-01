@@ -59,6 +59,20 @@ export async function POST(request: Request) {
 
   const db = createAdminClient()
 
+  // Verify the doctor belongs to this clinic (anti-IDOR) and inherit their branch,
+  // falling back to the clinic's default branch so location_id is always set.
+  const { data: doctorRow } = await db
+    .from('doctors').select('location_id').eq('id', doctor_id).eq('clinic_id', info.clinicId).maybeSingle()
+  if (!doctorRow) return NextResponse.json({ error: 'Dokter tidak ditemukan' }, { status: 404 })
+
+  let locationId = doctorRow.location_id
+  if (!locationId) {
+    const { data: def } = await db
+      .from('locations').select('id').eq('clinic_id', info.clinicId).eq('is_active', true)
+      .order('created_at', { ascending: true }).limit(1).maybeSingle()
+    locationId = def?.id ?? null
+  }
+
   // Generate queue number for the day
   const dateStr = scheduled_at.split('T')[0]
   const dayStart = new Date(dateStr + 'T00:00:00.000Z').toISOString()
@@ -77,6 +91,7 @@ export async function POST(request: Request) {
     clinic_id   : info.clinicId,
     patient_id  : info.patientId,
     doctor_id,
+    location_id : locationId,
     scheduled_at,
     complaint   : complaint || null,
     status      : 'menunggu',

@@ -90,7 +90,19 @@ export async function POST(
     patientName = newPat.full_name
   }
 
-  const { data: doctor } = await db.from('doctors').select('full_name').eq('id', body.doctor_id).single()
+  // Verify the doctor belongs to this clinic (anti-IDOR) and inherit their branch —
+  // the doctor's branch is the source of truth for this appointment's location.
+  const [{ data: doctor }, { data: activeBranches }] = await Promise.all([
+    db.from('doctors').select('full_name, location_id').eq('id', body.doctor_id).eq('clinic_id', clinicId).maybeSingle(),
+    db.from('locations').select('id, name').eq('clinic_id', clinicId).eq('is_active', true).order('created_at', { ascending: true }),
+  ])
+  if (!doctor) return NextResponse.json({ error: 'Dokter tidak ditemukan' }, { status: 404 })
+
+  // Fallback to the clinic's default (oldest active) branch if the doctor has none,
+  // so location_id is always set (keeps the later B1d NOT NULL contract safe).
+  const locationId  = doctor.location_id ?? activeBranches?.[0]?.id ?? null
+  const multiBranch = (activeBranches?.length ?? 0) > 1
+  const branchName  = activeBranches?.find(b => b.id === locationId)?.name ?? null
 
   const bookingCode = genBookingCode(body.date)
 
@@ -98,6 +110,7 @@ export async function POST(
     clinic_id:    clinicId,
     patient_id:   patientId,
     doctor_id:    body.doctor_id,
+    location_id:  locationId,
     scheduled_at: scheduledAt,
     complaint:    body.keluhan,
     status:       'menunggu',
@@ -115,10 +128,13 @@ export async function POST(
     }).format(new Date(body.date + 'T00:00:00'))
 
     // 1. WA ke pasien — konfirmasi booking
+    const branchLine = multiBranch && branchName ? `Cabang: ${branchName}\n` : ''
+
     const patMsg =
       `Halo ${patientName}, booking Anda di ${clinic.name} berhasil!\n\n` +
       `Kode Booking: *${bookingCode}*\n` +
       `Dokter: dr. ${doctor?.full_name ?? '-'}\n` +
+      branchLine +
       `Tanggal: ${tanggal}\n` +
       `Jam: ${body.time} WIB\n\n` +
       `Tunjukkan kode ini kepada receptionist saat tiba. Harap hadir 10 menit sebelum jadwal.\n` +
@@ -135,6 +151,7 @@ export async function POST(
         `📅 *Booking Baru Masuk*\n\n` +
         `Pasien: ${patientName} (${body.no_hp})\n` +
         `Dokter: dr. ${doctor?.full_name ?? '-'}\n` +
+        branchLine +
         `Tanggal: ${tanggal} — Jam: ${body.time}\n` +
         `Keluhan: ${body.keluhan}\n` +
         `Kode: ${bookingCode}`
@@ -190,5 +207,6 @@ export async function POST(
     time:          body.time,
     patient_name:  patientName,
     clinic_name:   clinic.name,
+    branch_name:   branchName,
   })
 }

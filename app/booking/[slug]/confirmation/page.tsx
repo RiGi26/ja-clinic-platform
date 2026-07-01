@@ -34,6 +34,7 @@ function ConfirmationContent() {
   const time    = search.get('time')    ?? ''
   const patient = search.get('patient') ?? ''
   const clinic  = search.get('clinic')  ?? ''
+  const branch  = search.get('branch')  ?? ''
 
   const [copied, setCopied] = useState(false)
 
@@ -101,6 +102,7 @@ function ConfirmationContent() {
         <div className="px-6 py-5 space-y-3.5">
           {([
             ['Dokter',  doctor  ? `dr. ${doctor}` : '—'],
+            ...(branch ? [['Cabang', branch] as [string, string]] : []),
             ['Tanggal', date    ? fmtDateLong(date) : '—'],
             ['Jam',     time    ? `${time} WIB` : '—'],
             ['Pasien',  patient || '—'],
