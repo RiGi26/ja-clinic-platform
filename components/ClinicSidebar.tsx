@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Calendar, CreditCard, Settings,
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
   ClipboardList, BarChart3, Tag, FileCheck, Pill, CalendarCheck, ChevronRight,
-  UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid, Sparkles,
+  UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid, Sparkles, Building2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { EntitlementKey } from '@/lib/entitlements'
@@ -30,6 +30,7 @@ const NAV_GROUPS: Record<Role, { label: string; items: NavItem[] }[]> = {
     {
       label: 'Manajemen Data',
       items: [
+        { href: '/admin/locations',       Icon: Building2,       label: 'Cabang'             },
         { href: '/admin/patients',        Icon: Users,           label: 'Database Pasien'    },
         { href: '/admin/schedule',        Icon: Calendar,        label: 'Jadwal Dokter'      },
         { href: '/admin/shifts',          Icon: CalendarCheck,   label: 'Jadwal Staf',        ent: 'shifts'   },

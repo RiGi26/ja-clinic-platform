@@ -7,7 +7,8 @@ import { Save, Plus, Trash2, Eye, EyeOff, Send, Bell, RefreshCw, Link2, Copy, Ch
 const INPUT_CLS = 'w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
 const LABEL_CLS = 'block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5'
 
-type Doctor = { id?: string; full_name: string; specialty: string; consultation_fee: number; is_active: boolean }
+type Doctor = { id?: string; full_name: string; specialty: string; consultation_fee: number; is_active: boolean; location_id?: string | null }
+type Branch = { id: string; name: string; is_active: boolean }
 
 type Notification = {
   id: string
@@ -39,6 +40,7 @@ export default function SettingsPage() {
   const [linkLoading,  setLinkLoading]  = useState(false)
   const [linkCopied,   setLinkCopied]   = useState(false)
   const [doctors, setDoctors]   = useState<Doctor[]>([])
+  const [locations, setLocations] = useState<Branch[]>([])
   const [saving, setSaving]     = useState(false)
   const [saved, setSaved]       = useState(false)
   const [showToken, setShowToken] = useState(false)
@@ -62,19 +64,23 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/admin/clinic-settings').then(r => r.json()).then((d: { clinic?: typeof clinic; doctors?: Doctor[] }) => {
+    fetch('/api/admin/clinic-settings').then(r => r.json()).then((d: { clinic?: typeof clinic; doctors?: Doctor[]; locations?: Branch[] }) => {
       if (d.clinic)  setClinic(prev => ({ ...prev, ...(d.clinic as typeof prev) }))
       if (d.doctors) setDoctors(d.doctors)
+      if (d.locations) setLocations(d.locations)
     })
     loadNotifications()
     fetch('/api/admin/booking-link').then(r => r.json()).then(d => setBookingLink(d.link ?? null))
   }, [loadNotifications])
 
   function setC(k: string, v: string) { setClinic(c => ({ ...c, [k]: v })) }
-  function setD(i: number, k: string, v: string | number | boolean) {
+  function setD(i: number, k: string, v: string | number | boolean | null) {
     setDoctors(ds => ds.map((d, idx) => idx === i ? { ...d, [k]: v } : d))
   }
-  function addDoctor() { setDoctors(ds => [...ds, { full_name: '', specialty: '', consultation_fee: 150000, is_active: true }]) }
+  function addDoctor() {
+    const defLoc = locations.find(l => l.is_active)?.id ?? locations[0]?.id ?? null
+    setDoctors(ds => [...ds, { full_name: '', specialty: '', consultation_fee: 150000, is_active: true, location_id: defLoc }])
+  }
   function removeDoctor(i: number) { setDoctors(ds => ds.filter((_, idx) => idx !== i)) }
 
   async function handleSave(e: React.FormEvent) {
@@ -214,20 +220,29 @@ export default function SettingsPage() {
                         <input type="number" value={doc.consultation_fee} onChange={e => setD(i, 'consultation_fee', Number(e.target.value))} className={INPUT_CLS} />
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
                         <label className={LABEL_CLS}>Spesialisasi</label>
-                        <input value={doc.specialty} onChange={e => setD(i, 'specialty', e.target.value)} placeholder="Dokter Umum / Spesialis..." className={INPUT_CLS} />
+                        <input value={doc.specialty} onChange={e => setD(i, 'specialty', e.target.value)} placeholder="Fisioterapis / Dokter Umum..." className={INPUT_CLS} />
                       </div>
-                      <div className="flex items-center gap-3 mt-4">
-                        <label className="flex items-center gap-2 text-sm font-bold text-secondary cursor-pointer">
-                          <input type="checkbox" checked={doc.is_active} onChange={e => setD(i, 'is_active', e.target.checked)} className="w-4 h-4 accent-primary" />
-                          Aktif
-                        </label>
-                        <button type="button" onClick={() => removeDoctor(i)} className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                      <div>
+                        <label className={LABEL_CLS}>Cabang</label>
+                        <select value={doc.location_id ?? ''} onChange={e => setD(i, 'location_id', e.target.value || null)} className={INPUT_CLS}>
+                          <option value="">— Pilih cabang —</option>
+                          {locations.map(l => (
+                            <option key={l.id} value={l.id}>{l.name}{l.is_active ? '' : ' (nonaktif)'}</option>
+                          ))}
+                        </select>
                       </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-3">
+                      <label className="flex items-center gap-2 text-sm font-bold text-secondary cursor-pointer">
+                        <input type="checkbox" checked={doc.is_active} onChange={e => setD(i, 'is_active', e.target.checked)} className="w-4 h-4 accent-primary" />
+                        Aktif
+                      </label>
+                      <button type="button" onClick={() => removeDoctor(i)} className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors">
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </div>
                 ))}

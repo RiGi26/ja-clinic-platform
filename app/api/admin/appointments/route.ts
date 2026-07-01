@@ -24,16 +24,21 @@ export async function GET(request: Request) {
   const start  = new Date(target.getFullYear(), target.getMonth(), target.getDate()).toISOString()
   const end    = new Date(target.getFullYear(), target.getMonth(), target.getDate() + 1).toISOString()
 
-  const { data, error } = await db
+  const locationId = searchParams.get('location_id')
+  let query = db
     .from('appointments')
     .select(`
-      id, scheduled_at, status, complaint, type, queue_number,
+      id, scheduled_at, status, complaint, type, queue_number, location_id,
       patients(id, no_rm, full_name, phone, date_of_birth, gender, blood_type),
-      doctors(id, full_name, specialty)
+      doctors(id, full_name, specialty),
+      locations(id, name)
     `)
     .eq('clinic_id', clinicId)
     .gte('scheduled_at', start)
     .lt('scheduled_at', end)
+  if (locationId) query = query.eq('location_id', locationId)
+
+  const { data, error } = await query
     .order('queue_number', { ascending: true, nullsFirst: false })
     .order('scheduled_at', { ascending: true })
 
