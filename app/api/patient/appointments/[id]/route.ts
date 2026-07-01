@@ -133,5 +133,9 @@ export async function DELETE(
     .eq('patient_id', info.patientId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Refund a package session if this appointment drew one down (no-op otherwise).
+  await db.rpc('release_package_session', { p_appointment_id: id, p_clinic_id: info.clinicId })
+
   return NextResponse.json({ success: true })
 }

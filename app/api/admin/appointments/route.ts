@@ -64,5 +64,11 @@ export async function PATCH(request: Request) {
     .eq('clinic_id', clinicId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Cancelling a visit refunds any package session it drew down (no-op otherwise).
+  if (status === 'batal') {
+    await db.rpc('release_package_session', { p_appointment_id: id, p_clinic_id: clinicId })
+  }
+
   return NextResponse.json({ success: true })
 }
