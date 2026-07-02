@@ -9,6 +9,7 @@ import {
   Clock, FileText, Activity, User, ChevronLeft, LogOut,
   ClipboardList, BarChart3, Tag, FileCheck, Pill, CalendarCheck, ChevronRight,
   UserCheck, List, UserPlus, Receipt, Menu, X, LayoutGrid, Sparkles, Building2, Layers,
+  HelpCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { EntitlementKey } from '@/lib/entitlements'
@@ -98,6 +99,16 @@ const NAV_GROUPS: Record<Role, { label: string; items: NavItem[] }[]> = {
   ],
 }
 
+// Onboarding tour anchors — the tour resolves these to whichever element is
+// actually on screen (sidebar on desktop; dashboard elements on mobile).
+const TOUR_KEYS: Record<string, string> = {
+  '/admin':              'nav-dashboard',
+  '/admin/locations':    'nav-locations',
+  '/admin/treatments':   'nav-treatments',
+  '/admin/appointments': 'nav-appointments',
+  '/admin/settings':     'nav-settings',
+}
+
 const ROLE_LABEL: Record<Role, string> = {
   admin        : 'Administrator',
   doctor       : 'Dokter',
@@ -150,6 +161,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={TOUR_KEYS[item.href]}
                 onClick={onClose}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-3'} py-2 rounded-xl text-sm sf-display relative overflow-hidden transition-all duration-200
                   ${active
@@ -182,11 +194,25 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
           <Image src="/logo-rocket.png" alt="Webzoka" width={28} height={28} className="object-contain" />
           <h1 className="text-[17px] sf-display-heavy text-[#1D1D1F] truncate max-w-[180px]">{pageTitle}</h1>
         </div>
-        <form action="/auth/logout" method="post">
-          <button type="submit" className="p-2 text-[#FF3B30] rounded-lg hover:bg-red-50">
-            <LogOut size={20} />
-          </button>
-        </form>
+        <div className="flex items-center gap-1">
+          {role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('onboarding:replay-tour'))}
+              data-coach="help-button"
+              aria-label="Panduan — putar ulang tur"
+              title="Panduan portal"
+              className="p-2 text-gray-500 rounded-lg hover:bg-black/5"
+            >
+              <HelpCircle size={20} />
+            </button>
+          )}
+          <form action="/auth/logout" method="post">
+            <button type="submit" className="p-2 text-[#FF3B30] rounded-lg hover:bg-red-50">
+              <LogOut size={20} />
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* ─── Mobile Overlay ───────────────────────────────────────── */}
@@ -278,7 +304,20 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
 
         {/* Profile & Logout */}
         <div className="p-4 border-t border-black/5 bg-white/50 shrink-0 space-y-1">
-          <a 
+          {role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('onboarding:replay-tour'))}
+              data-coach="help-button"
+              aria-label="Panduan — putar ulang tur"
+              title="Panduan portal"
+              className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-4'} py-2 rounded-xl text-[11px] font-bold text-gray-500 hover:bg-black/5 hover:text-gray-900 w-full transition-all`}
+            >
+              <HelpCircle size={14} />
+              {!isCollapsed && <span>Panduan</span>}
+            </button>
+          )}
+          <a
             href="https://www.webzoka.com"
             className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-4'} py-2 rounded-xl text-[11px] font-bold text-gray-500 hover:bg-black/5 hover:text-gray-900 transition-all`}
             title={isCollapsed ? 'Portal Utama' : undefined}
