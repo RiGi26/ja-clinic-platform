@@ -1,5 +1,7 @@
 import { getClinicUser } from '@/lib/clinic'
 import { createAdminClient } from '@/lib/supabase/server'
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
+import { getOnboardingState } from '@/lib/onboarding/state'
 import { Users, Calendar, DollarSign, Clock, TrendingUp, Star, ArrowRight, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 
@@ -40,6 +42,8 @@ export default async function AdminDashboardPage() {
   const user = await getClinicUser()
   const db   = createAdminClient()
   const cid  = user.clinic_id
+  // Shares one computation with the admin layout via React cache().
+  const onboarding = await getOnboardingState()
 
   const today      = new Date()
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
@@ -99,12 +103,24 @@ export default async function AdminDashboardPage() {
         </div>
         
         <div className="flex gap-3">
+          {/* data-tour: mobile anchor for the "Antrian Live" tour step (sidebar
+              drawer is off-screen on phones). */}
           <Link href="/admin/appointments/walkin"
+            data-tour="nav-appointments"
             className="bg-[#1D1D1F] text-white px-6 py-4 md:py-3 rounded-2xl md:rounded-full text-sm sf-display-heavy shadow-lg hover:bg-black transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 w-full md:w-auto">
             <Users size={16} /> Daftarkan Pasien
           </Link>
         </div>
       </header>
+
+      {onboarding.checklistVisible && (
+        <OnboardingChecklist
+          items={onboarding.items}
+          completed={onboarding.completed}
+          total={onboarding.total}
+          progress={onboarding.progress}
+        />
+      )}
 
       {/* ─── Stats Row (Rounded Apple) ──────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
