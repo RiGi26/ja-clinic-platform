@@ -92,6 +92,8 @@ CREATE TABLE IF NOT EXISTS public.patients (
   address           TEXT,
   emergency_contact TEXT,
   emergency_phone   TEXT,
+  weight            NUMERIC(5,1),          -- migration 016 (drift fix)
+  height            NUMERIC(5,1),          -- migration 016 (drift fix)
   created_at        TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT patients_pkey PRIMARY KEY (id),
   UNIQUE (clinic_id, no_rm)
