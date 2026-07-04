@@ -57,6 +57,7 @@ export default function RegisterPage() {
 
   // Core enum tier → display label (Growth/Pro) for the subscribe copy.
   const tierLabel = tier === 'enterprise' ? 'Pro' : tier === 'pro' ? 'Growth' : tier === 'starter' ? 'Starter' : null
+  const subscribing = subscribe && !!tierLabel
 
   const slug = generateSlug(clinicName)
 
@@ -213,17 +214,24 @@ export default function RegisterPage() {
 
               {/* Badge + Heading */}
               <div className="mb-4">
-                <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">
-                  {subscribe && tierLabel
-                    ? `✨ Berlangganan paket ${tierLabel}`
-                    : '✨ Gratis 14 hari — tanpa kartu kredit'}
-                </span>
-                <h2 className="text-xl font-black text-[#0C2340] mb-0.5">Daftarkan Bisnis Anda</h2>
+                {!subscribing && (
+                  <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">
+                    ✨ Gratis 14 hari — tanpa kartu kredit
+                  </span>
+                )}
+                <h2 className="text-xl font-black text-[#0C2340] mb-0.5">
+                  {subscribing ? `Berlangganan ${tierLabel}` : 'Daftarkan Bisnis Anda'}
+                </h2>
                 <p className="text-xs text-gray-400">
-                  {subscribe
-                    ? 'Buat akun bisnis Anda, lalu lanjut ke pembayaran.'
+                  {subscribing
+                    ? 'Isi data bisnis, lalu lanjut ke pembayaran'
                     : 'Isi data di bawah, bisnis Anda langsung aktif.'}
                 </p>
+                {subscribing && (
+                  <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
+                    Belum siap bayar? Akun tetap mendapat trial 14 hari.
+                  </p>
+                )}
               </div>
 
               {error && (
@@ -300,7 +308,7 @@ export default function RegisterPage() {
                   style={{ background: 'linear-gradient(135deg, #0A2342 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(8,145,178,0.35)' }}>
                   {loading
                     ? <><Loader2 size={16} className="animate-spin" /> Mendaftarkan...</>
-                    : subscribe ? 'Lanjut ke Pembayaran →' : 'Daftarkan Bisnis 🚀'}
+                    : subscribing ? 'Daftar & Lanjut Bayar →' : 'Daftarkan Bisnis 🚀'}
                 </button>
               </form>
 
