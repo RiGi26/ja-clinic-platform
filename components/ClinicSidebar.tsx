@@ -163,7 +163,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
                 href={item.href}
                 data-tour={TOUR_KEYS[item.href]}
                 onClick={onClose}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-3'} py-2 rounded-xl text-sm sf-display relative overflow-hidden transition-all duration-200
+                className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-3'} py-3 md:py-2 rounded-xl text-sm sf-display relative overflow-hidden transition-all duration-200
                   ${active
                     ? 'bg-[#0071E3]/10 text-[#0071E3] font-bold shadow-[0_2px_10px_rgba(0,113,227,0.05)]'
                     : 'text-gray-500 hover:bg-black/5 hover:text-gray-900'}
@@ -188,7 +188,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
       {/* ─── Mobile Top Bar ───────────────────────────────────────── */}
       <header className="md:hidden fixed top-0 w-full h-14 bg-white/80 backdrop-blur-xl border-b border-black/5 z-30 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setMobileOpen(true)} aria-label="Buka menu navigasi" className="p-2 -ml-2 text-gray-600 rounded-lg hover:bg-black/5">
+          <button onClick={() => setMobileOpen(true)} aria-label="Buka menu navigasi" className="grid place-items-center h-11 w-11 -ml-2.5 text-gray-600 rounded-lg hover:bg-black/5">
             <Menu size={22} />
           </button>
           <Image src="/logo-rocket.png" alt="Webzoka" width={28} height={28} className="object-contain" />
@@ -202,13 +202,13 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
               data-coach="help-button"
               aria-label="Panduan — putar ulang tur"
               title="Panduan portal"
-              className="p-2 text-gray-500 rounded-lg hover:bg-black/5"
+              className="grid place-items-center h-11 w-11 text-gray-500 rounded-lg hover:bg-black/5"
             >
               <HelpCircle size={20} />
             </button>
           )}
           <form action="/auth/logout" method="post">
-            <button type="submit" className="p-2 text-[#FF3B30] rounded-lg hover:bg-red-50">
+            <button type="submit" aria-label="Keluar dari sistem" className="grid place-items-center h-11 w-11 text-[#FF3B30] rounded-lg hover:bg-red-50">
               <LogOut size={20} />
             </button>
           </form>
@@ -231,7 +231,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
         {/* Drawer Header */}
         <div className="px-5 pt-8 pb-5 flex items-center justify-between h-24 shrink-0">
           <img src="/logo-wide-clean.png" alt="Webzoka — Part of Japan Arena Corp" className="w-[180px] max-w-[72%] max-h-[56px] object-contain" />
-          <button onClick={() => setMobileOpen(false)} aria-label="Tutup menu navigasi" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-black/5 transition-colors">
+          <button onClick={() => setMobileOpen(false)} aria-label="Tutup menu navigasi" className="grid place-items-center h-11 w-11 -mr-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-black/5 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -256,7 +256,7 @@ export default function ClinicSidebar({ role, userName, userSub, entitlements, i
             </div>
           </div>
           <form action="/auth/logout" method="post">
-            <button type="submit" className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[#FF3B30]/10 text-[#FF3B30] text-[12px] font-bold rounded-xl hover:bg-[#FF3B30]/20 transition-all active:scale-95">
+            <button type="submit" className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#FF3B30]/10 text-[#FF3B30] text-[12px] font-bold rounded-xl hover:bg-[#FF3B30]/20 transition-all active:scale-95">
               <LogOut size={14} /> Keluar dari Sistem
             </button>
           </form>
