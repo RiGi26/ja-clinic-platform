@@ -22,7 +22,6 @@ export async function POST(request: Request) {
   if (!clinicName?.trim()) return NextResponse.json({ error: 'Nama klinik wajib diisi' }, { status: 400 })
   if (!slug?.trim() || slug.length < 3) return NextResponse.json({ error: 'Nama klinik terlalu pendek' }, { status: 400 })
   if (RESERVED.has(slug)) return NextResponse.json({ error: 'Nama klinik ini tidak bisa digunakan, coba nama lain' }, { status: 400 })
-  if (!phone?.trim()) return NextResponse.json({ error: 'Nomor telepon wajib diisi' }, { status: 400 })
   if (!adminName?.trim()) return NextResponse.json({ error: 'Nama admin wajib diisi' }, { status: 400 })
   if (!email?.trim()) return NextResponse.json({ error: 'Email wajib diisi' }, { status: 400 })
   if (!password || password.length < 8) return NextResponse.json({ error: 'Password minimal 8 karakter' }, { status: 400 })
@@ -48,7 +47,7 @@ export async function POST(request: Request) {
     .insert({
       name:            clinicName.trim(),
       slug,
-      phone:           phone.trim(),
+      phone:           phone?.trim() || null,
       address:         address?.trim() || null,
       plan:            'trial',
       plan_expires_at: planExpiresAt,
