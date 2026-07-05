@@ -56,11 +56,17 @@ export async function proxy(request: NextRequest) {
     .split(':')[0]
     .toLowerCase()
 
+  // Domain resmi platform sendiri (bukan custom domain tenant) — pola sama dgn lib/billing-link.ts.
+  const ownDomain = (
+    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '') || 'clinic.webzoka.com'
+  ).toLowerCase()
+
   const isPlatformDomain =
     hostname.includes('vercel.app') ||
     hostname.includes('localhost') ||
     hostname === '127.0.0.1' ||
-    hostname === ''
+    hostname === '' ||
+    hostname === ownDomain
 
   if (isPlatformDomain) {
     return supabaseResponse
