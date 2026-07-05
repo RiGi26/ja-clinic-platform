@@ -2,19 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle2, Check } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 
 const INPUT_CLS = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-[#0C2340] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0891B2] focus:border-transparent transition-all'
 
 const RESERVED = new Set(['demo-clinic', 'admin', 'api', 'auth', 'register', 'superadmin', 'login', 'logout', 'www'])
-
-const TRUST_POINTS = [
-  'Langsung aktif setelah daftar',
-  'Data bisnis Anda aman & terenkripsi',
-  'Tidak ada kontrak jangka panjang',
-  'Support via WhatsApp siap membantu',
-]
 
 function generateSlug(name: string): string {
   return name
@@ -111,71 +103,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F9FF] flex">
-
-      {/* ── Left: Branding ───────────────────────────────── */}
-      <div
-        className="hidden lg:flex flex-col justify-between w-[52%] relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #0A2342, #0C3A6B)' }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[500px] h-[500px] rounded-full bg-cyan-500/[0.05]" />
-        </div>
-
-        <div className="relative z-10 px-8 pt-8">
-          <Link href="/auth/login" className="group inline-flex items-center gap-2 w-fit">
-            <Image
-              src="/images/logo-dark.png"
-              alt="Webzoka"
-              width={280} height={84}
-              className="w-[200px] h-auto object-contain"
-              priority
-            />
-            <span className="opacity-0 group-hover:opacity-100 transition-all text-white/50 text-xs font-medium whitespace-nowrap">
-              ← Login
-            </span>
-          </Link>
-        </div>
-
-        <div className="relative z-10 px-8 pb-4">
-          <h1 className="text-3xl font-black text-white leading-tight tracking-tight mb-3">
-            Mulai 14 hari gratis.
-          </h1>
-          <p className="text-white/60 text-sm mb-5 leading-relaxed">
-            Tidak perlu kartu kredit. Setup dalam hitungan menit.
-          </p>
-
-          <div className="space-y-2 mb-5">
-            {TRUST_POINTS.map(point => (
-              <div key={point} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                  <Check size={11} className="text-emerald-400" />
-                </div>
-                <span className="text-white/80 text-sm font-semibold">{point}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
-            <span className="text-sm">🔒</span>
-            <span className="text-white/70 text-xs font-medium">Digunakan oleh bisnis di Indonesia</span>
-          </div>
-        </div>
-
-        <div className="relative z-10 px-8 pb-6">
-          <p className="text-white/40 text-sm font-medium">Webzoka · by Japan Arena Corp</p>
-        </div>
-      </div>
-
-      {/* ── Right: Form ──────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#F0F9FF] flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
 
-          {/* Mobile logo */}
-          <Link href="/auth/login" className="flex items-center gap-2 mb-6 lg:hidden group">
-            <Image src="/images/Icon.png" alt="Webzoka" width={40} height={40} className="w-10 h-auto object-contain" />
-            <span className="text-xs text-gray-400 group-hover:text-[#0891B2] transition-colors font-medium">← Login</span>
-          </Link>
+          {/* Wordmark */}
+          <div className="text-center mb-6">
+            <img src="/logo-rocket.png" alt="Logo Webzoka" className="mx-auto h-14 w-14 object-contain" />
+          </div>
 
           {success ? (
 
@@ -225,7 +159,7 @@ export default function RegisterPage() {
                 <p className="text-xs text-gray-400">
                   {subscribing
                     ? 'Isi data bisnis, lalu lanjut ke pembayaran'
-                    : 'Isi data di bawah, bisnis Anda langsung aktif.'}
+                    : 'Isi data bisnis, akun langsung aktif.'}
                 </p>
                 {subscribing && (
                   <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
@@ -307,7 +241,7 @@ export default function RegisterPage() {
                   className="w-full py-3 rounded-xl text-white font-black text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
                   style={{ background: 'linear-gradient(135deg, #0A2342 0%, #0891B2 100%)', boxShadow: '0 4px 20px rgba(8,145,178,0.35)' }}>
                   {loading
-                    ? <><Loader2 size={16} className="animate-spin" /> Mendaftarkan...</>
+                    ? <><Loader2 size={16} className="animate-spin" /> Memproses...</>
                     : subscribing ? 'Daftar & Lanjut Bayar →' : 'Daftarkan Bisnis 🚀'}
                 </button>
               </form>
@@ -327,7 +261,6 @@ export default function RegisterPage() {
             © {new Date().getFullYear()} Webzoka
           </p>
         </div>
-      </div>
 
     </div>
   )
