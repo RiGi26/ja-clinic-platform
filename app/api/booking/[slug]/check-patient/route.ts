@@ -23,13 +23,16 @@ export async function GET(
 
   if (!link?.is_active) return NextResponse.json({ found: false })
 
+  // Privasi (audit 2026-07-05): endpoint publik tanpa auth — JANGAN kembalikan nama
+  // pasien. Sebelumnya `name` dibalas untuk siapa pun yang tahu slug booking + no HP,
+  // memungkinkan pemanenan PII dan pengaitan no HP ke pasien sebuah klinik. Cukup
+  // boolean untuk pre-fill "nomor dikenali"; nama tetap diisi manual oleh pasien.
   const { data: patient } = await db
     .from('patients')
-    .select('full_name')
+    .select('id')
     .eq('clinic_id', link.clinic_id)
     .eq('phone', phone)
-    .single()
+    .maybeSingle()
 
-  if (patient) return NextResponse.json({ found: true, name: patient.full_name })
-  return NextResponse.json({ found: false })
+  return NextResponse.json({ found: !!patient })
 }
