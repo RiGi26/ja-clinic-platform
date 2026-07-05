@@ -154,7 +154,7 @@ export default function RegisterPage() {
                   </span>
                 )}
                 <h2 className="text-xl font-black text-[#0C2340] mb-0.5">
-                  {subscribing ? `Berlangganan ${tierLabel}` : 'Daftarkan Bisnis Anda'}
+                  {subscribing ? `Berlangganan ${tierLabel}` : 'Daftar & Mulai Trial'}
                 </h2>
                 <p className="text-xs text-gray-400">
                   {subscribing
