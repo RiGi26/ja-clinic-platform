@@ -8,6 +8,8 @@ import type { OnboardingTrack } from '@/lib/onboarding/steps'
 // WelcomeModal — one-time first-run greeting (Orient phase).
 // Presentational only: parent (OnboardingLauncher) owns open state + persistence.
 // Only the admin persona sees onboarding in this portal, so copy is single-track.
+// Outside-click dismiss is disabled: first-run should only close via a
+// conscious choice (button or Escape), not an accidental overlay tap.
 // ============================================================
 
 interface WelcomeModalProps {
@@ -28,7 +30,12 @@ const POINTS: { icon: React.ElementType; text: string }[] = [
 export function WelcomeModal({ open, onOpenChange, userName, onStartTour, onSkip }: WelcomeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showClose={false}>
+      <DialogContent
+        showClose={false}
+        sheet
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         {/* Icon badge */}
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0071E3]/10">
           <Sparkles className="h-6 w-6 text-[#0071E3]" strokeWidth={2} />

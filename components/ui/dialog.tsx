@@ -17,13 +17,17 @@ export function DialogContent({
   className = '',
   children,
   showClose = true,
+  sheet = false,
   ...props
-}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showClose?: boolean }) {
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showClose?: boolean; sheet?: boolean }) {
+  const positionClass = sheet
+    ? 'fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100%-2rem)] sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 w-full rounded-t-3xl rounded-b-none border-t sm:rounded-3xl sm:border pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-6 animate-sheet'
+    : 'fixed left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border'
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm animate-fade-in" />
       <DialogPrimitive.Content
-        className={`fixed left-1/2 top-1/2 z-[100] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-black/5 bg-white p-6 shadow-2xl focus:outline-none ${className}`}
+        className={`${positionClass} z-[100] max-h-[85vh] overflow-y-auto border-black/5 bg-white p-6 shadow-2xl focus:outline-none ${className}`}
         {...props}
       >
         {children}
