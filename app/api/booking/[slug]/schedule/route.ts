@@ -11,7 +11,6 @@ export const dynamic = 'force-dynamic'
 // fungsi Vercel berjalan di UTC.
 // ============================================================
 
-const SLOT_MINUTES = 30
 // Jam default bila dokter belum punya baris doctor_schedules —
 // sama dengan generateSlots() di route slots (08:00–17:00).
 const DEFAULT_START = '08:00'
@@ -21,9 +20,10 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const hhmm = (t: string) => t.slice(0, 5)
 const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 
-function slotTimes(start: string, end: string): string[] {
+// step = clinics.booking_slot_minutes (30 = perilaku lama; fisio pakai 60).
+function slotTimes(start: string, end: string, step: number): string[] {
   const out: string[] = []
-  for (let m = toMin(start); m < toMin(end); m += SLOT_MINUTES) {
+  for (let m = toMin(start); m < toMin(end); m += step) {
     out.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`)
   }
   return out
@@ -38,11 +38,13 @@ export async function GET(
 
   const { data: link } = await db
     .from('booking_links')
-    .select('clinic_id, is_active')
+    .select('clinic_id, is_active, clinics(booking_slot_minutes)')
     .eq('slug', slug)
     .single()
 
   if (!link?.is_active) return NextResponse.json({ error: 'Link tidak aktif' }, { status: 404 })
+
+  const slotStep = (link.clinics as any)?.booking_slot_minutes ?? 30
 
   // "Hari ini" versi WIB (UTC+7) — pengunjung situs ada di Indonesia.
   const wib = new Date(Date.now() + 7 * 3600_000)
@@ -115,7 +117,7 @@ export async function GET(
     let today: null | { start: string; end: string; free: number; next: string[] } = null
     if (todayRow) {
       const booked = bookedByDoctor.get(doc.id) ?? new Set<string>()
-      const free = slotTimes(todayRow.start, todayRow.end).filter(
+      const free = slotTimes(todayRow.start, todayRow.end, slotStep).filter(
         t => !booked.has(t) && toMin(t) > nowMin,
       )
       today = { start: todayRow.start, end: todayRow.end, free: free.length, next: free.slice(0, 4) }
