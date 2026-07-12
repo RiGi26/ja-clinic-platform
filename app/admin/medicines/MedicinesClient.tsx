@@ -159,8 +159,67 @@ export default function MedicinesPage() {
           </button>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Mobile cards — 6 kolom tabel tidak muat di layar sempit */}
+        <div className="lg:hidden space-y-3">
+          {loading ? (
+            <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center text-sm text-gray-400">Memuat...</div>
+          ) : medicines.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center text-sm text-gray-400">Belum ada obat</div>
+          ) : medicines.map(m => {
+            const isLow = m.stock <= m.min_stock
+            return (
+              <div key={m.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 truncate">{m.name}</p>
+                    {m.generic_name && <p className="text-xs text-gray-400 truncate">{m.generic_name}</p>}
+                  </div>
+                  <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-bold capitalize ${CAT_BADGE[m.category] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {m.category}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">Stok</p>
+                    <p className={`text-sm font-bold ${isLow ? 'text-red-500' : 'text-gray-800'}`}>
+                      {isLow && <AlertTriangle size={12} className="inline mr-1" />}
+                      {m.stock} {m.unit}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">Min. Stok</p>
+                    <p className="text-sm text-gray-500">{m.min_stock} {m.unit}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">Harga</p>
+                    <p className="text-sm text-gray-600">{fmtRupiah(m.price)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                  <button onClick={() => { setStockForm({ quantity:'', reference:'', notes:'' }); setInModal(m) }}
+                    className="flex flex-1 items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] text-xs font-bold bg-emerald-100 text-emerald-700 rounded-lg active:scale-95 transition-transform">
+                    <ArrowUp size={12} /> Masuk
+                  </button>
+                  <button onClick={() => { setStockForm({ quantity:'', reference:'', notes:'' }); setOutModal(m) }}
+                    className="flex flex-1 items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] text-xs font-bold bg-red-100 text-red-600 rounded-lg active:scale-95 transition-transform">
+                    <ArrowDown size={12} /> Keluar
+                  </button>
+                  <button onClick={() => loadHistory(m)}
+                    className="flex flex-1 items-center justify-center gap-1 px-2 py-2.5 min-h-[44px] text-xs font-bold bg-gray-100 text-gray-600 rounded-lg active:scale-95 transition-transform">
+                    <History size={12} /> Riwayat
+                  </button>
+                  <button onClick={() => handleDelete(m.id)} aria-label={`Hapus ${m.name}`}
+                    className="flex items-center justify-center min-h-[44px] min-w-[44px] text-gray-300 hover:text-red-500 transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Table (desktop) */}
+        <div className="hidden lg:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">

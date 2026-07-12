@@ -9,7 +9,7 @@ export default function DemoBanner() {
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 bg-amber-500 py-2.5 px-4">
-      <div className="flex items-center justify-between max-w-7xl mx-auto gap-3">
+      <div className="flex flex-wrap items-center justify-between max-w-7xl mx-auto gap-x-3 gap-y-1.5">
 
         <div className="flex items-center gap-2 min-w-0">
           <FlaskConical size={15} className="text-amber-100 flex-shrink-0" />
