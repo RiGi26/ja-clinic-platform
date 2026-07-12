@@ -7,9 +7,10 @@ const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 const pad = (n: number) => String(n).padStart(2, '0')
 
 // Default 08:00–17:00 bila dokter belum punya baris doctor_schedules.
-function generateSlots(start = '08:00', end = '17:00'): string[] {
+// step = clinics.booking_slot_minutes (30 = perilaku lama; fisio pakai 60).
+function generateSlots(start = '08:00', end = '17:00', step = 30): string[] {
   const slots: string[] = []
-  for (let m = toMin(start); m < toMin(end); m += 30) {
+  for (let m = toMin(start); m < toMin(end); m += step) {
     slots.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`)
   }
   return slots
@@ -32,11 +33,13 @@ export async function GET(
 
   const { data: link } = await db
     .from('booking_links')
-    .select('clinic_id, is_active')
+    .select('clinic_id, is_active, clinics(booking_slot_minutes)')
     .eq('slug', slug)
     .single()
 
   if (!link?.is_active) return NextResponse.json({ error: 'Link tidak aktif' }, { status: 404 })
+
+  const slotStep = (link.clinics as any)?.booking_slot_minutes ?? 30
 
   const [year, month, day] = date.split('-').map(Number)
   const dayStart = new Date(year, month - 1, day, 0, 0, 0).toISOString()
@@ -78,7 +81,7 @@ export async function GET(
   const now     = new Date()
   const isToday = date === now.toISOString().split('T')[0]
 
-  const slots = generateSlots(window.start, window.end).map(time => {
+  const slots = generateSlots(window.start, window.end, slotStep).map(time => {
     let available = !bookedTimes.has(time)
     if (isToday && available) {
       const [h, m] = time.split(':').map(Number)

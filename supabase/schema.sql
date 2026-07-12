@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS public.clinics (
   bank_holder       TEXT,
   -- WA Notification
   fonnte_token      TEXT,
+  -- Interval slot booking publik (menit): 30 = tiap setengah jam (default),
+  -- 60 = tiap jam (fisioterapi, sesi 60 mnt). Dipakai /api/booking/[slug]/{slots,schedule}.
+  booking_slot_minutes INTEGER  NOT NULL DEFAULT 30,
   -- Subscription
   plan              TEXT        NOT NULL DEFAULT 'trial'
                                 CHECK (plan IN ('trial','basic','pro','custom')),
