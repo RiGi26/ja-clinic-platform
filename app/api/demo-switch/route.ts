@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getOrCreateDemoClinic, seedDemoData } from '@/lib/demo-clinic-seed'
 
@@ -42,18 +42,29 @@ export async function POST(req: NextRequest) {
     const cfg = ROLE_CONFIG[role as DemoRole]
     const db  = createAdminClient()
 
-    // 1. Pastikan demo clinic ada
-    const clinicId = await getOrCreateDemoClinic(db)
+    // 1+3 in parallel — independent reads: resolving/creating the demo clinic
+    // does not depend on whether the demo user already exists, and vice versa.
+    const [clinicId, existingProfile] = await Promise.all([
+      getOrCreateDemoClinic(db),
+      db.from('users').select('id').eq('email', cfg.email).maybeSingle().then(r => r.data),
+    ])
     if (!clinicId) {
       return NextResponse.json({ error: 'Gagal menyiapkan klinik demo.' }, { status: 500 })
     }
 
-    // 2. Seed data demo — hanya jika belum ada dokter (idempotent check ringan)
-    //    Seed berjalan di background agar tidak memblok response
-    const { count: doctorCount } = await db
-      .from('doctors')
-      .select('*', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId)
+    // 2+4 in parallel — the doctor-count seed check (needs clinicId) is
+    // independent of resolving/creating the auth user (needs existingProfile).
+    const [{ count: doctorCount }, userIdResult] = await Promise.all([
+      db.from('doctors').select('*', { count: 'exact', head: true }).eq('clinic_id', clinicId),
+      existingProfile?.id
+        ? Promise.resolve<{ id: string } | { error: string }>({ id: existingProfile.id })
+        : db.auth.admin.createUser({ email: cfg.email, password: DEMO_PASS, email_confirm: true })
+            .then(({ data, error }) =>
+              error || !data?.user
+                ? { error: 'Gagal buat akun demo: ' + (error?.message ?? 'unknown') }
+                : { id: data.user.id }
+            ),
+    ])
 
     if (!doctorCount || doctorCount === 0) {
       // Seed hanya pertama kali — tidak block, biarkan selesai sendiri
@@ -62,33 +73,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 3. Cari atau buat auth user — pakai query DB langsung, bukan listUsers()
-    //    (listUsers() hanya ambil 50 user pertama, rentan miss existing user)
-    const { data: existingProfile } = await db
-      .from('users')
-      .select('id')
-      .eq('email', cfg.email)
-      .maybeSingle()
-
-    let userId: string
-
-    if (existingProfile?.id) {
-      userId = existingProfile.id
-    } else {
-      const { data: newAuth, error: authErr } = await db.auth.admin.createUser({
-        email: cfg.email, password: DEMO_PASS, email_confirm: true,
-      })
-      if (authErr || !newAuth?.user) {
-        return NextResponse.json(
-          { error: 'Gagal buat akun demo: ' + (authErr?.message ?? 'unknown') },
-          { status: 500 }
-        )
-      }
-      userId = newAuth.user.id
+    if ('error' in userIdResult) {
+      return NextResponse.json({ error: userIdResult.error }, { status: 500 })
     }
+    const userId = userIdResult.id
+    const isReturningUser = !!existingProfile?.id
 
-    // 4. Upsert profil
-    const { error: upsertErr } = await db.from('users').upsert({
+    // 5. Upsert profil. Untuk user yang SUDAH ADA (warm path), baris users
+    //    sudah ada sebelum kita mulai — upsert di sini cuma refresh metadata
+    //    yang biasanya tak berubah, jadi aman dijalankan after() (non-blocking,
+    //    tak menunda role-specific insert/signin). Untuk user BARU (cold path,
+    //    baru saja createUser), tetap WAJIB di-await: doctors.user_id adalah
+    //    FK NOT NULL ke users(id), insert doctor bisa gagal kalau baris users
+    //    belum committed.
+    const doUpsert = () => db.from('users').upsert({
       id        : userId,
       email     : cfg.email,
       full_name : cfg.name,
@@ -97,11 +95,19 @@ export async function POST(req: NextRequest) {
       clinic_id : clinicId,
     }, { onConflict: 'id' })
 
-    if (upsertErr) {
-      return NextResponse.json({ error: 'Gagal simpan profil: ' + upsertErr.message }, { status: 500 })
+    if (isReturningUser) {
+      after(async () => {
+        const { error } = await doUpsert()
+        if (error) console.error('[demo-switch] upsert refresh error (non-fatal):', error.message)
+      })
+    } else {
+      const { error: upsertErr } = await doUpsert()
+      if (upsertErr) {
+        return NextResponse.json({ error: 'Gagal simpan profil: ' + upsertErr.message }, { status: 500 })
+      }
     }
 
-    // 5. Setup role-specific records (idempotent)
+    // 6. Setup role-specific records (idempotent)
     if (role === 'doctor') {
       const { data: existDoc } = await db.from('doctors')
         .select('id').eq('clinic_id', clinicId).eq('user_id', userId).maybeSingle()
@@ -130,7 +136,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Sign in
+    // 7. Sign in
     const supabase = await createClient()
     const { error: signInErr } = await supabase.auth.signInWithPassword({
       email: cfg.email, password: DEMO_PASS,
