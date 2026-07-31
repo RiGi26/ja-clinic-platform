@@ -4,26 +4,40 @@ import { getOrCreateDemoClinic, seedDemoData } from '@/lib/demo-clinic-seed'
 
 export const dynamic = 'force-dynamic'
 
+// Legacy admin-only demo entry — superseded by /api/demo-switch (4 roles), but
+// kept routable (never deleted) in case old bookmarks/cached pages still POST
+// here. Same demo admin account as demo-switch's 'admin' role, so once that
+// flow has run once the sign-in-first path below succeeds on the first try.
 const DEMO_EMAIL = 'demo-admin@klinik-platform.com'
 const DEMO_PASS  = 'demo-klinik-2026'
 
 export async function POST() {
   try {
+    const supabase = await createClient()
+
+    // Warm path: account already provisioned (true once /demo has been hit by
+    // anyone, admin or otherwise) → one auth round trip.
+    const { error: firstAttempt } = await supabase.auth.signInWithPassword({
+      email: DEMO_EMAIL, password: DEMO_PASS,
+    })
+    if (!firstAttempt) {
+      return NextResponse.json({ success: true, redirectTo: '/admin' })
+    }
+
+    // Cold path: account missing/broken → provision from scratch (old logic,
+    // minus the blocking seed — seeding never blocks the response now).
     const db = createAdminClient()
 
-    // 1. Buat/cari clinic DULU — dapat clinic_id valid
     const clinicId = await getOrCreateDemoClinic(db)
     if (!clinicId) {
       return NextResponse.json({ error: 'Gagal membuat data klinik demo. Pastikan schema.sql sudah dijalankan.' }, { status: 500 })
     }
 
-    // 2. Cari atau buat user di Supabase Auth
+    const { data: existingProfile } = await db.from('users').select('id').eq('email', DEMO_EMAIL).maybeSingle()
     let userId: string
-    const { data: authList } = await db.auth.admin.listUsers()
-    const existUser = authList?.users?.find(u => u.email === DEMO_EMAIL)
 
-    if (existUser) {
-      userId = existUser.id
+    if (existingProfile?.id) {
+      userId = existingProfile.id
     } else {
       const { data: newAuth, error: authErr } = await db.auth.admin.createUser({
         email: DEMO_EMAIL, password: DEMO_PASS, email_confirm: true,
@@ -34,14 +48,13 @@ export async function POST() {
       userId = newAuth.user.id
     }
 
-    // 3. Upsert profil user — DENGAN clinic_id yang sudah valid (bukan null)
     const { error: upsertErr } = await db.from('users').upsert({
       id       : userId,
       email    : DEMO_EMAIL,
       full_name: 'Admin Demo Klinik',
       role     : 'admin',
       status   : 'active',
-      clinic_id: clinicId,   // ← clinic_id valid, bukan null
+      clinic_id: clinicId,
     }, { onConflict: 'id' })
 
     if (upsertErr) {
@@ -49,17 +62,16 @@ export async function POST() {
       return NextResponse.json({ error: 'Gagal simpan profil: ' + upsertErr.message }, { status: 500 })
     }
 
-    // 4. Seed data (dokter, pasien, appointment, billing)
-    await seedDemoData(db, clinicId)
+    // Seed fire-and-forget — never block the response (was `await` before).
+    void seedDemoData(db, clinicId).catch(e =>
+      console.error('[demo-clinic-login] seed error (non-fatal):', e)
+    )
 
-    // 5. Sign in
-    const supabase = await createClient()
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
+    const { error: retryErr } = await supabase.auth.signInWithPassword({
       email: DEMO_EMAIL, password: DEMO_PASS,
     })
-
-    if (signInErr) {
-      return NextResponse.json({ error: 'Gagal login: ' + signInErr.message }, { status: 401 })
+    if (retryErr) {
+      return NextResponse.json({ error: 'Gagal login: ' + retryErr.message }, { status: 401 })
     }
 
     return NextResponse.json({ success: true, redirectTo: '/admin' })
