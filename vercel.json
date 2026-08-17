@@ -3,6 +3,7 @@
   "regions": ["sin1"],
   "crons": [
     { "path": "/api/cron/wa-reminder", "schedule": "0 11 * * *" },
-    { "path": "/api/cron/trial-reminder", "schedule": "0 1 * * *" }
+    { "path": "/api/cron/trial-reminder", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/keepalive", "schedule": "25 2 */6 * *" }
   ]
 }
